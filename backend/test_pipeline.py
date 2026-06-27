@@ -389,13 +389,20 @@ if __name__ == "__main__":
     args = parse_args()
 
     if not args.synthetic and args.data_dir is None:
-        print(
-            "\n[INFO] No --data_dir provided. Running in --synthetic mode.\n"
-            "       To use real METR-LA data:\n"
-            "         python backend/test_pipeline.py --data_dir /path/to/metr-la/\n"
-            "       Download from: https://github.com/liyaguang/DCRNN\n"
-        )
-        args.synthetic = True
+        default_dir = Path(REPO_ROOT) / "datasets" / "raw"
+        if (default_dir / "metr-la.h5").exists() and (default_dir / "adj_mx.pkl").exists():
+            print(f"\n[INFO] No --data_dir provided. Found METR-LA in {default_dir}. Using it.")
+            args.data_dir = str(default_dir)
+        else:
+            print(
+                "\n[INFO] No --data_dir provided and dataset not found in datasets/raw/.\n"
+                "       To run with real data, use:\n"
+                "         python backend/test_pipeline.py --data_dir /path/to/metr-la/\n"
+                "       To run with synthetic data, use:\n"
+                "         python backend/test_pipeline.py --synthetic\n"
+            )
+            print("       Aborting. Please explicitly pass --synthetic if you want to use synthetic data.")
+            sys.exit(1)
 
     run_pipeline(
         data_dir=args.data_dir,
