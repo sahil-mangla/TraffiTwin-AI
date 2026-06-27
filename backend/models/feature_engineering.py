@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from backend.evaluation.config import config
+
 logger = logging.getLogger(__name__)
 
 
@@ -36,7 +38,8 @@ class SpatialFeatureEngineer:
         X: np.ndarray, 
         mask: np.ndarray, 
         A: np.ndarray, 
-        timestamps: pd.DatetimeIndex
+        timestamps: pd.DatetimeIndex,
+        max_samples: int = None
     ) -> Tuple[pd.DataFrame, np.ndarray]:
         """
         Fit the engineer (optional, for statefulness if needed) and transform data.
@@ -47,14 +50,15 @@ class SpatialFeatureEngineer:
         y_target : np.ndarray
         """
         self._fitted = True
-        return self.transform(X, mask, A, timestamps)
+        return self.transform(X, mask, A, timestamps, max_samples)
 
     def transform(
         self, 
         X: np.ndarray, 
         mask: np.ndarray, 
         A: np.ndarray, 
-        timestamps: pd.DatetimeIndex
+        timestamps: pd.DatetimeIndex,
+        max_samples: int = None
     ) -> Tuple[pd.DataFrame, np.ndarray]:
         """
         Transform the tensor into a tabular dataset.
@@ -112,6 +116,20 @@ class SpatialFeatureEngineer:
         # Find all failures occurring after start_t
         failed_t, failed_n = np.where(mask[start_t:] == 0)
         failed_t += start_t  # Adjust back to absolute time indices
+        
+        if len(failed_t) > config.MAX_FEATURE_ROWS:
+            total_rows = len(failed_t)
+            rng = np.random.default_rng(config.RANDOM_SEED)
+            idx = rng.choice(total_rows, config.MAX_FEATURE_ROWS, replace=False)
+            failed_t = failed_t[idx]
+            failed_n = failed_n[idx]
+            logger.info(f"Feature cap reached. Sampled {config.MAX_FEATURE_ROWS} rows from {total_rows} total rows.")
+        elif max_samples is not None and len(failed_t) > max_samples:
+            # Fallback if a different explicit limit is requested
+            rng = np.random.default_rng(config.RANDOM_SEED)
+            idx = rng.choice(len(failed_t), max_samples, replace=False)
+            failed_t = failed_t[idx]
+            failed_n = failed_n[idx]
         
         logger.info(f"Extracting features for {len(failed_t)} failed observations...")
         

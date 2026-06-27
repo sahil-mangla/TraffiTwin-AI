@@ -80,10 +80,13 @@ class LightGBMReconstructor:
                 eval_metric="rmse",
                 callbacks=callbacks
             )
+            self.best_iteration_ = self.model.best_iteration_
+            logger.info(f"Training completed. Best iteration: {self.best_iteration_}")
         else:
             self.model.fit(X_train, y_train)
+            self.best_iteration_ = getattr(self.model, "best_iteration_", None)
+            logger.info("Training completed.")
             
-        logger.info("Training completed.")
         return self
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
