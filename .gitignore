@@ -7,3 +7,9 @@ venv/
 .venv/
 datasets/raw/
 datasets/processed/
+
+# Large datasets and models
+METR-LA archive/
+backend/models/checkpoints/
+*.pkl
+*.h5
