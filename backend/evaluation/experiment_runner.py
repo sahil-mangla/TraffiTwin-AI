@@ -89,13 +89,20 @@ class ExperimentRunner:
                 )
                 
                 print("Model             : LightGBM")
-                print("==================================================")
+                print("==================================================" )
                 # Using 500 estimators per user request, early stopping enabled internally
                 lgb_model = LightGBMReconstructor(n_estimators=500, n_jobs=1, random_state=seed)
                 lgb_model.fit(X_train_df, y_train, eval_set=(X_val_df, y_val))
                 
                 y_pred_lgb = lgb_model.predict(X_test_df)
-                metrics_lgb = calculate_all_metrics(y_test, y_pred_lgb, total_failures=len(y_test))
+                
+                # FCR FIX: total_failures must be the raw count of all failed (t,n)
+                # cells in the test mask — NOT len(y_test), which is already filtered
+                # by the start_t=24 guard inside SpatialFeatureEngineer and loses
+                # ~2.97% of events unconditionally. Passing len(y_test) makes FCR
+                # measure len(y_pred)/len(y_test) ≈ 100% regardless of true coverage.
+                total_test_failures = int((test_fail.mask_matrix == 0).sum())
+                metrics_lgb = calculate_all_metrics(y_test, y_pred_lgb, total_failures=total_test_failures)
                 
                 # If LightGBM recorded a best_iteration_, track it
                 if hasattr(lgb_model, 'best_iteration_') and lgb_model.best_iteration_ is not None:

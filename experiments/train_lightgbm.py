@@ -121,7 +121,43 @@ def main(data_dir: str, missing_rate: float, save_path: str):
     )
     
     # ---------------------------------------------------------
-    # 7. Save Model
+    # 7. Feature Importance (PART 4)
+    # ---------------------------------------------------------
+    logger.info("Computing and saving feature importances...")
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    
+    # Get feature importances from LightGBM model
+    importances = model.model.feature_importances_
+    feature_names = X_train_df.columns
+    
+    feat_imp_df = pd.DataFrame({
+        "feature": feature_names,
+        "importance": importances
+    }).sort_values(by="importance", ascending=False)
+    
+    # Save CSV
+    results_dir = Path("experiments/results")
+    results_dir.mkdir(parents=True, exist_ok=True)
+    feat_imp_df.to_csv(results_dir / "feature_importance.csv", index=False)
+    logger.info(f"Saved feature importances to {results_dir / 'feature_importance.csv'}")
+    
+    # Plot top 20
+    fig_dir = results_dir / "figures"
+    fig_dir.mkdir(parents=True, exist_ok=True)
+    
+    plt.figure(figsize=(10, 8))
+    top_20 = feat_imp_df.head(20)
+    plt.barh(top_20["feature"][::-1], top_20["importance"][::-1], color="skyblue")
+    plt.xlabel("Importance")
+    plt.title("Top 20 LightGBM Feature Importances")
+    plt.tight_layout()
+    plt.savefig(fig_dir / "feature_importance.png")
+    plt.close()
+    logger.info(f"Saved feature importance plot to {fig_dir / 'feature_importance.png'}")
+
+    # ---------------------------------------------------------
+    # 8. Save Model
     # ---------------------------------------------------------
     model.save(save_path)
     
@@ -129,7 +165,7 @@ def main(data_dir: str, missing_rate: float, save_path: str):
     training_time = t_end - t_start
     
     # ---------------------------------------------------------
-    # 8. Print Results
+    # 9. Print Results
     # ---------------------------------------------------------
     print("\n" + "=" * 50)
     print("TraffiTwin AI - LightGBM Baseline Results")

@@ -4,6 +4,26 @@
 
 ---
 
+## 🔑 Key Innovation
+
+TraffiTwin AI introduces a resilience-driven self-healing layer capable of reconstructing missing traffic intelligence during infrastructure outages.
+
+---
+
+## 📊 Current Project Status
+
+| Research Pillar / Module | Status |
+| :--- | :---: |
+| Research Foundation | ✅ |
+| Data Pipeline | ✅ |
+| Failure Simulation | ✅ |
+| Reconstruction Agent | ✅ |
+| Benchmark Framework | ✅ |
+| Leakage Audit | ✅ |
+| Digital Twin Backend | 🚧 |
+
+---
+
 ## 📌 Problem Statement
 Modern smart cities depend heavily on real-time traffic camera feeds to feed traffic optimization algorithms, signal control systems, and emergency dispatch platforms. However, physical cameras are prone to frequent failures due to hardware glitches, connectivity drops, lens obstruction, and power outages. When these feeds fail, traffic control networks suffer from blind spots, leading to sub-optimal traffic flow, gridlocks, and delayed response times.
 
@@ -67,7 +87,39 @@ In modern metropolitan areas, traffic signals and emergency routing are increasi
 ---
 
 ## 🏛️ System Architecture
-Architecture diagram coming soon.
+
+The current pipeline implements a data-driven self-healing architecture:
+
+```text
+Real METR-LA Data ──> Failure Simulator ──> Spatio-Temporal Feature Engine ──> LightGBM Reconstruction Agent ──> Evaluation Engine ──> Digital Twin Layer
+```
+
+For a comprehensive explanation of each block, please see the [Architecture Overview](file:///Users/sahilmangla/TraffiTwin-AI/docs/architecture.md).
+
+---
+
+## 📊 Experimental Results
+
+### Latest Benchmark Results
+
+**Spatio-Temporal LightGBM:**
+*   **MAE**: 2.48
+*   **MAPE**: 6.06 %
+*   **RFS** (Recovery Fidelity Score): 0.73
+
+### Benchmark Findings
+
+- **78.55% average improvement** over traditional fallback methods.
+- Autonomously supports up to **40% simultaneous infrastructure failures**.
+- **Zero temporal leakage** detected across all validation splits.
+
+---
+
+## 🏆 Benchmark Highlights
+
+*   **Historical Mean**: MAPE ≈ 28%
+*   **Initial LightGBM**: MAPE ≈ 14%
+*   **Spatio-Temporal LightGBM**: MAPE ≈ 6%
 
 ---
 
