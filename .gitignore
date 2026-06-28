@@ -13,3 +13,10 @@ METR-LA archive/
 backend/models/checkpoints/
 *.pkl
 *.h5
+
+# Node.js
+node_modules/
+dist/
+*.log
+.codebase-memory/
+
