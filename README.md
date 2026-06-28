@@ -10,16 +10,17 @@ TraffiTwin AI introduces a resilience-driven self-healing layer capable of recon
 
 ---
 
-## 📊 Current Project Status
+# Project Status
 
-| Research Pillar / Module | Status |
-| :--- | :---: |
-| Research Foundation | ✅ |
-| Data Pipeline | ✅ |
+| Component | Status |
+|-----------|--------|
+| Literature Review | ✅ |
+| Dataset Pipeline | ✅ |
 | Failure Simulation | ✅ |
 | Reconstruction Agent | ✅ |
 | Benchmark Framework | ✅ |
 | Leakage Audit | ✅ |
+| FCR Audit | ✅ |
 | Digital Twin Backend | 🚧 |
 
 ---
@@ -98,28 +99,33 @@ For a comprehensive explanation of each block, please see the [Architecture Over
 
 ---
 
-## 📊 Experimental Results
+# Latest Benchmark Results
 
-### Latest Benchmark Results
+## Spatio-Temporal LightGBM
+MAE: 2.48 mph
+MAPE: 6.06 %
+RFS: 0.73
+FCR: 97.03 %
 
-**Spatio-Temporal LightGBM:**
-*   **MAE**: 2.48
-*   **MAPE**: 6.06 %
-*   **RFS** (Recovery Fidelity Score): 0.73
+# Key Findings
+- TraffiTwin AI improves reconstruction accuracy by 78.55% compared to conventional fallback mechanisms.
+- Maintains approximately 97% network observability during infrastructure failures.
+- Successfully reconstructs traffic states under up to 40% simulated sensor failures.
+- Zero temporal leakage detected.
 
-### Benchmark Findings
+# Benchmark Evolution
+Historical Mean:
+MAPE ≈ 28%
+Spatial LightGBM:
+MAPE ≈ 14%
+Spatio-Temporal LightGBM:
+MAPE ≈ 6%
 
-- **78.55% average improvement** over traditional fallback methods.
-- Autonomously supports up to **40% simultaneous infrastructure failures**.
-- **Zero temporal leakage** detected across all validation splits.
-
----
-
-## 🏆 Benchmark Highlights
-
-*   **Historical Mean**: MAPE ≈ 28%
-*   **Initial LightGBM**: MAPE ≈ 14%
-*   **Spatio-Temporal LightGBM**: MAPE ≈ 6%
+# Research Highlights
+- Real-world METR-LA benchmark
+- Leak-free evaluation pipeline
+- Novel resilience metrics (RFS, FCR, SDI)
+- Self-healing traffic intelligence
 
 ---
 

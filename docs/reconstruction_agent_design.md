@@ -479,16 +479,17 @@ The Reconstruction Agent has been systematically evaluated on the METR-LA datase
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Historical Mean** | 5% – 40% | ~9.94 | ~12.91 | ~28.11% | -- | 100.0% |
 | **LOCF (Last Obs. Carried Fwd)** | 5% – 40% | 3.05 – 3.27 | 5.87 – 6.48 | 6.88% – 7.58% | -- | 100.0% |
-| **Spatio-Temporal LightGBM** | 5% | **2.51** | **4.32** | **6.03%** | **0.786** | 100.0% |
-| **Spatio-Temporal LightGBM** | 10% | **2.50** | **4.28** | **5.96%** | **0.787** | 100.0% |
-| **Spatio-Temporal LightGBM** | 20% | **2.50** | **4.32** | **6.02%** | **0.785** | 100.0% |
-| **Spatio-Temporal LightGBM** | 30% | **2.51** | **4.34** | **6.05%** | **0.785** | 100.0% |
-| **Spatio-Temporal LightGBM** | 40% | **2.53** | **4.35** | **6.09%** | **0.783** | 100.0% |
+| **Spatio-Temporal LightGBM** | 5% | **2.51** | **4.32** | **6.03%** | **0.786** | **97.03%** |
+| **Spatio-Temporal LightGBM** | 10% | **2.50** | **4.28** | **5.96%** | **0.787** | **97.03%** |
+| **Spatio-Temporal LightGBM** | 20% | **2.50** | **4.32** | **6.02%** | **0.785** | **97.03%** |
+| **Spatio-Temporal LightGBM** | 30% | **2.51** | **4.34** | **6.05%** | **0.785** | **97.03%** |
+| **Spatio-Temporal LightGBM** | 40% | **2.53** | **4.35** | **6.09%** | **0.783** | **97.03%** |
 
 ### Key Experimental Findings
-1.  **Spatio-Temporal Performance**: Our LightGBM Reconstructor achieves a stable **~6.0% MAPE** and **2.48 - 2.53 MAE** across all failure rates up to 40%.
+1.  **Spatio-Temporal Performance**: Our LightGBM Reconstructor achieves a stable **~6.0% MAPE** and **2.48 - 2.53 MAE** across all failure rates up to 40% (overall representative MAE: 2.48 mph, MAPE: 6.06 %, RFS: 0.73, FCR: 97.03 %).
 2.  **Naive Baselines Outperformed**: Our model demonstrates a **78.55% average improvement** over the traditional historical mean fallback method.
 3.  **High Outage Robustness**: Performance degrades by less than **0.1% MAPE** when the failure rate scales from 5% to 40%, showing the extreme stability of the spatio-temporal features.
+4.  **Failure Coverage Rate**: Incorporating temporal lags requires a 24-timestep warmup, resulting in a stable FCR of **97.03%** (2.97% gap).
 
 ---
 

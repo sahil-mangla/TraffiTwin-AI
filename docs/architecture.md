@@ -11,34 +11,17 @@ TraffiTwin AI employs a modular, data-driven self-healing architecture designed 
 ### Data Flow Diagram
 
 ```text
-       ┌────────────────────────┐
-       │   Real METR-LA Data    │  <-- raw metr-la.h5 + adj_mx.pkl
-       └───────────┬────────────┘
-                   │
-                   ▼
-       ┌────────────────────────┐
-       │   Failure Simulator    │  <-- MCAR and Block-Missing injection
-       └───────────┬────────────┘
-                   │
-                   ▼
-       ┌────────────────────────┐
-       │ Spatio-Temporal Engine │  <-- Neighborhood aggregates + Lags + Trends
-       └───────────┬────────────┘
-                   │
-                   ▼
-       ┌────────────────────────┐
-       │ LightGBM Reconstructor │  <-- Virtual sensor speed estimator
-       └───────────┬────────────┘
-                   │
-                   ▼
-       ┌────────────────────────┐
-       │   Evaluation Engine    │  <-- MAE, RMSE, MAPE, RFS, FCR
-       └───────────┬────────────┘
-                   │
-                   ▼
-       ┌────────────────────────┐
-       │   Digital Twin Layer   │  <-- [Upcoming] Real-time visualization
-       └────────────────────────┘
+Real METR-LA Data
+        ↓
+Failure Simulation Layer
+        ↓
+Spatio-Temporal Feature Engine
+        ↓
+LightGBM Reconstruction Agent
+        ↓
+Evaluation Engine
+        ↓
+Digital Twin Layer (Upcoming)
 ```
 
 ---
