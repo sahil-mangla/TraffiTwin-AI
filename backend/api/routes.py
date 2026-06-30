@@ -4,10 +4,12 @@ from backend.api.schemas import (
     SimulateFailureRequest, SimulateFailureResponse,
     StepRequest, StepResponse,
     TwinSnapshotResponse, MetricsResponse,
-    GraphResponse, SystemStateResponse
+    GraphResponse, SystemStateResponse,
+    IncidentSummaryResponse, GenerateSummaryRequest, GenerateSummaryResponse
 )
 from backend.services.twin_service import TwinService
 from datetime import datetime, timezone
+from typing import Any, List
 
 router = APIRouter()
 
@@ -17,6 +19,16 @@ def get_twin_service() -> TwinService:
         raise HTTPException(status_code=503, detail="Twin Service not initialized")
     return app.state.twin_service
 
+def get_incident_service() -> Any:
+    from backend.api.app import app
+    if not hasattr(app.state, "incident_service"):
+        raise HTTPException(status_code=503, detail="Incident Service not initialized")
+    return app.state.incident_service
+
+def calculate_observability(snapshot: dict, num_nodes: int) -> float:
+    active_failures = sum(1 for v in snapshot["masks"].values() if v)
+    reconstructed_nodes = len(snapshot["reconstructions"])
+    return ((num_nodes - active_failures + reconstructed_nodes) / num_nodes) * 100.0
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -49,7 +61,10 @@ async def get_graph(twin: TwinService = Depends(get_twin_service)):
 
 
 @router.get("/state", response_model=SystemStateResponse)
-async def get_system_state(twin: TwinService = Depends(get_twin_service)):
+async def get_system_state(
+    twin: TwinService = Depends(get_twin_service),
+    incident: Any = Depends(get_incident_service)
+):
     """
     Unified state endpoint — merges snapshot + metrics into a single coherent
     payload. This is the primary polling target for the frontend.
@@ -70,13 +85,19 @@ async def get_system_state(twin: TwinService = Depends(get_twin_service)):
         metrics=metrics,
         timestamp=datetime.now(timezone.utc).isoformat(),
         system_health=health,
+        latest_incident_summary=incident.get_latest_summary_text(),
     )
 
 
 @router.post("/simulate_failure", response_model=SimulateFailureResponse)
-async def simulate_failure(req: SimulateFailureRequest, twin: TwinService = Depends(get_twin_service)):
+async def simulate_failure(
+    req: SimulateFailureRequest,
+    twin: TwinService = Depends(get_twin_service),
+    incident: Any = Depends(get_incident_service)
+):
     try:
         twin.inject_failure(sensor_id=req.sensor_id, duration=req.duration)
+        await incident.process_event(twin, "sensor_failure", sensor_id=req.sensor_id, duration=req.duration)
         return SimulateFailureResponse(
             status="success",
             message=f"Injected failure on sensor {req.sensor_id} for {req.duration} steps."
@@ -86,8 +107,34 @@ async def simulate_failure(req: SimulateFailureRequest, twin: TwinService = Depe
 
 
 @router.post("/step", response_model=StepResponse)
-async def step_simulation(req: StepRequest, twin: TwinService = Depends(get_twin_service)):
+async def step_simulation(
+    req: StepRequest,
+    twin: TwinService = Depends(get_twin_service),
+    incident: Any = Depends(get_incident_service)
+):
+    # Pre-step metrics
+    pre_snapshot = twin.get_snapshot()
+    pre_masks = {str(k): bool(v) for k, v in pre_snapshot["masks"].items()}
+    pre_obs = calculate_observability(pre_snapshot, twin.state.num_nodes)
+
     twin.step(steps=req.steps)
+
+    # Post-step metrics
+    post_snapshot = twin.get_snapshot()
+    post_masks = {str(k): bool(v) for k, v in post_snapshot["masks"].items()}
+    post_obs = calculate_observability(post_snapshot, twin.state.num_nodes)
+
+    # Recovery checks
+    for sensor_id_str, was_failed in pre_masks.items():
+        is_failed = post_masks.get(sensor_id_str, False)
+        if was_failed and not is_failed:
+            sensor_id = int(sensor_id_str)
+            await incident.process_event(twin, "sensor_recovery", sensor_id=sensor_id)
+
+    # Observability drop check (> 5%)
+    if pre_obs - post_obs > 5.0:
+        await incident.process_event(twin, "observability_drop")
+
     return StepResponse(
         current_time=twin.state.current_time_step,
         message=f"Simulation advanced by {req.steps} steps."
@@ -101,3 +148,19 @@ async def get_metrics(twin: TwinService = Depends(get_twin_service)):
         current_time=twin.state.current_time_step,
         **metrics
     )
+
+
+@router.get("/incident-summaries", response_model=List[IncidentSummaryResponse])
+async def get_incident_summaries(incident: Any = Depends(get_incident_service)):
+    summaries = incident.get_latest_summaries()
+    return [IncidentSummaryResponse(**s) for s in summaries]
+
+
+@router.post("/generate-incident-summary", response_model=GenerateSummaryResponse)
+async def generate_incident_summary(
+    req: GenerateSummaryRequest,
+    incident: Any = Depends(get_incident_service)
+):
+    payload = req.model_dump()
+    summary = await incident.generate_from_payload(payload)
+    return GenerateSummaryResponse(summary=summary)

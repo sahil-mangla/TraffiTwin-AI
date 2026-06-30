@@ -16,7 +16,10 @@ interface TwinStore {
   selectedSensorId: number | null;
 
   // ── Storytelling banner ───────────────────────────────────────────────────
-  activeBanner: { type: 'fault' | 'ai' | 'recovery'; message: string } | null;
+  activeBanner: { type: 'fault' | 'ai' | 'recovery'; message: string; subtitle?: string } | null;
+
+  // ── AI Operations Analyst ──────────────────────────────────────────────────
+  latestIncidentSummary: string | null;
 
   // ── Actions ───────────────────────────────────────────────────────────────
   setSystemState: (state: SystemState, prevSnapshot: TwinSnapshot | null) => void;
@@ -46,6 +49,7 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
   lastUpdated: null,
   selectedSensorId: null,
   activeBanner: null,
+  latestIncidentSummary: null,
 
   setSystemState(state, prevSnapshot) {
     const { snapshot: prev } = get();
@@ -75,13 +79,13 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
           sensor_id: Number(id),
         });
         // Trigger fault banner
-        set({ activeBanner: { type: 'fault', message: `SENSOR ${id} FAILURE DETECTED` } });
+        set({ activeBanner: { type: 'fault', message: 'SENSOR FAILURE DETECTED', subtitle: `Sensor ${id} offline` } });
         setTimeout(() => {
           const banner = get().activeBanner;
           if (banner?.type === 'fault') {
-            set({ activeBanner: { type: 'ai', message: 'AI RECONSTRUCTION ENGAGED' } });
+            set({ activeBanner: { type: 'ai', message: 'AI RECONSTRUCTION ENGAGED', subtitle: 'Recovering observability' } });
           }
-        }, 1200);
+        }, 2000);
       }
 
       if (!failed && wasFailed) {
@@ -96,11 +100,11 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
             : `Sensor ${id} returned to service`,
           sensor_id: Number(id),
         });
-        set({ activeBanner: { type: 'recovery', message: 'TRAFFIC INTELLIGENCE RESTORED' } });
+        set({ activeBanner: { type: 'recovery', message: 'TRAFFIC INTELLIGENCE RESTORED', subtitle: 'Network fully observable' } });
         setTimeout(() => {
           const banner = get().activeBanner;
           if (banner?.type === 'recovery') set({ activeBanner: null });
-        }, 3000);
+        }, 4000);
       }
     }
 
@@ -117,6 +121,7 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
       lastUpdated: new Date(),
       isBackendOffline: false,
       isLoading: false,
+      latestIncidentSummary: state.latest_incident_summary || null,
       events: newEvents.length
         ? [...newEvents, ...s.events].slice(0, 50)
         : s.events,

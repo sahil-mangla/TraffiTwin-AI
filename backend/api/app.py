@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv() # Load variables from .env file
+
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import lightgbm as lgb
@@ -8,12 +12,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.api.routes import router
 from backend.services.twin_service import TwinService
+from backend.services.incident_intelligence_service import IncidentIntelligenceService
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 logger.info("Starting TraffiTwin AI Backend...")
 twin_service = TwinService()
+incident_service = IncidentIntelligenceService()
 try:
     twin_service.initialize()
     logger.info("==================================================")
@@ -31,6 +37,7 @@ except Exception as e:
 async def lifespan(app: FastAPI):
     # Startup
     app.state.twin_service = twin_service
+    app.state.incident_service = incident_service
     yield
     # Shutdown
     logger.info("Shutting down TraffiTwin AI Backend...")

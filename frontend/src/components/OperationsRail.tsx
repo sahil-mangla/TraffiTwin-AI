@@ -15,10 +15,11 @@ function AnimatedNumber({ value, decimals = 2 }: { value: number; decimals?: num
     const startTime = performance.now();
 
     function tick(now: number) {
+      if (!ref.current) return;
       const t = Math.min((now - startTime) / dur, 1);
       const eased = 1 - (1 - t) * (1 - t); // ease-out-quad
       const current = start + (end - start) * eased;
-      el.textContent = current.toFixed(decimals);
+      ref.current.textContent = current.toFixed(decimals);
       if (t < 1) requestAnimationFrame(tick);
       else prevRef.current = end;
     }
@@ -36,6 +37,7 @@ function MetricCard({
   accent,
   large,
   status,
+  decimals,
 }: {
   label: string;
   value: number;
@@ -44,15 +46,17 @@ function MetricCard({
   accent?: string;
   large?: boolean;
   status?: 'ok' | 'warn' | 'fail';
+  decimals?: number;
 }) {
   const statusColor = { ok: '#10B981', warn: '#F59E0B', fail: '#EF4444' }[status ?? 'ok'];
 
   return (
-    <div className="rounded border border-[#2A3545] bg-[#121820] p-3">
+    <div className="rounded-xl p-3 relative overflow-hidden" style={{ background: 'var(--premium-card-bg)', border: '1px solid var(--premium-card-border)', boxShadow: 'var(--premium-card-shadow)' }}>
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#E8EDF4]/10 to-transparent"></div>
       <div className="text-[10px] font-mono text-[#8BA0BA] tracking-widest mb-1 uppercase">{label}</div>
       <div className={`font-mono font-bold leading-none ${large ? 'text-4xl' : 'text-2xl'}`}
         style={{ color: accent ?? statusColor }}>
-        <AnimatedNumber value={value} decimals={large ? 2 : 2} />
+        <AnimatedNumber value={value} decimals={decimals ?? (large ? 2 : 2)} />
         {unit && <span className="text-sm ml-1 font-normal text-[#8BA0BA]">{unit}</span>}
       </div>
       {sub && <div className="text-[11px] font-mono mt-1" style={{ color: statusColor }}>{sub}</div>}
@@ -64,6 +68,7 @@ export function OperationsRail() {
   const metrics = useTwinStore((s) => s.metrics);
   const snapshot = useTwinStore((s) => s.snapshot);
   const isLoading = useTwinStore((s) => s.isLoading);
+  const latestIncidentSummary = useTwinStore((s) => s.latestIncidentSummary);
 
   if (isLoading || !metrics || !snapshot) {
     return (
@@ -75,10 +80,12 @@ export function OperationsRail() {
     );
   }
 
+  const totalSensors = Object.keys(snapshot.readings).length || 207;
   const activeFailed = Object.values(snapshot.masks).filter(Boolean).length;
   const activeRecon = Object.keys(snapshot.reconstructions).length;
-  const fcrStatus = metrics.fcr >= 95 ? 'ok' : metrics.fcr >= 80 ? 'warn' : 'fail';
-  const fcrLabel = metrics.fcr >= 95 ? 'OPERATIONAL' : metrics.fcr >= 80 ? 'DEGRADED' : 'CRITICAL';
+  const observability = ((totalSensors - activeFailed + activeRecon) / totalSensors) * 100;
+  const obsStatus = observability >= 95 ? 'ok' : observability >= 90 ? 'warn' : 'fail';
+  const obsLabel = observability >= 95 ? 'OPERATIONAL' : observability >= 90 ? 'DEGRADED' : 'CRITICAL';
 
   return (
     <aside
@@ -91,24 +98,25 @@ export function OperationsRail() {
 
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
         {/* Hero metric */}
-        <div className="rounded border border-[#2A3545] bg-[#1A2230] p-4">
-          <div className="text-[10px] font-mono text-[#8BA0BA] tracking-widest mb-2">
-            NETWORK OBSERVABILITY — FCR
+        <div className="rounded-xl p-5 relative overflow-hidden" style={{ background: 'var(--premium-card-bg)', border: '1px solid var(--premium-card-border)', boxShadow: 'var(--premium-card-shadow)' }}>
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#E8EDF4]/20 to-transparent"></div>
+          <div className="text-[11px] font-mono text-[#8BA0BA] tracking-widest mb-3">
+            NETWORK OBSERVABILITY
           </div>
-          <div className="text-5xl font-mono font-bold leading-none"
-            style={{ color: fcrStatus === 'ok' ? '#10B981' : fcrStatus === 'warn' ? '#F59E0B' : '#EF4444' }}>
-            <AnimatedNumber value={metrics.fcr} decimals={2} />
-            <span className="text-xl ml-1 font-normal text-[#8BA0BA]">%</span>
+          <div className="text-6xl font-mono font-bold leading-none mb-1"
+            style={{ color: obsStatus === 'ok' ? '#10B981' : obsStatus === 'warn' ? '#F59E0B' : '#EF4444' }}>
+            <AnimatedNumber value={observability} decimals={2} />
+            <span className="text-2xl ml-1 font-normal text-[#8BA0BA]">%</span>
           </div>
-          <div className="mt-2 text-xs font-mono font-semibold tracking-widest"
-            style={{ color: fcrStatus === 'ok' ? '#10B981' : fcrStatus === 'warn' ? '#F59E0B' : '#EF4444' }}>
-            {fcrLabel}
+          <div className="mt-3 text-sm font-mono font-bold tracking-widest"
+            style={{ color: obsStatus === 'ok' ? '#10B981' : obsStatus === 'warn' ? '#F59E0B' : '#EF4444' }}>
+            {obsLabel}
           </div>
         </div>
 
         {/* Secondary metrics grid */}
         <div className="grid grid-cols-2 gap-2">
-          <MetricCard label="MAE" value={metrics.mae} unit="mph" status="ok" />
+          <MetricCard label="Recon Acc." value={metrics.fcr} unit="%" status={metrics.fcr >= 95 ? 'ok' : metrics.fcr >= 80 ? 'warn' : 'fail'} />
           <MetricCard label="RMSE" value={metrics.rmse} unit="mph" status="ok" />
           <MetricCard
             label="Active Failures"
@@ -134,6 +142,19 @@ export function OperationsRail() {
         <div className="border-t border-[#2A3545] pt-2">
           <p className="text-[10px] font-mono text-[#8BA0BA] tracking-widest mb-2">SYSTEM ALERTS</p>
           <AlertItems activeFailed={activeFailed} activeRecon={activeRecon} />
+        </div>
+
+        {/* AI Operations Analyst */}
+        <div className="border-t border-[#2A3545] pt-3 mt-1">
+          <p className="text-[10px] font-mono text-[#8BA0BA] tracking-widest mb-2 uppercase">AI Operations Analyst</p>
+          <div className="rounded-xl p-3 relative overflow-hidden text-xs font-mono leading-relaxed" style={{ background: 'var(--premium-card-bg)', border: '1px solid var(--premium-card-border)', boxShadow: 'var(--premium-card-shadow)' }}>
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#E8EDF4]/10 to-transparent"></div>
+            {latestIncidentSummary ? (
+              <div className="text-[#E8EDF4]">{latestIncidentSummary}</div>
+            ) : (
+              <div className="text-[#8BA0BA] italic">No active incidents. System operating under nominal conditions.</div>
+            )}
+          </div>
         </div>
       </div>
     </aside>

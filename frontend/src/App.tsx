@@ -10,7 +10,8 @@ import { StorytellingBanner } from './components/StorytellingBanner';
 import { BackendOfflineOverlay } from './components/BackendOfflineOverlay';
 import { useSystemState } from './hooks/useSystemState';
 import { useAutoPlay } from './hooks/useAutoPlay';
-import type { GraphLayoutNode } from './types/api';
+import { api } from './api/trafitwin';
+import type { GraphLayoutNode, GraphEdge } from './types/api';
 
 // Panel entrance animation variants
 const panelVariants = {
@@ -18,7 +19,11 @@ const panelVariants = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.08, duration: 0.35, ease: 'easeOut' },
+    transition: {
+      delay: i * 0.1,
+      duration: 0.4,
+      ease: 'easeOut' as const,
+    },
   }),
 };
 
@@ -27,13 +32,19 @@ function App() {
   useAutoPlay(refetch);
 
   const [layout, setLayout] = useState<GraphLayoutNode[]>([]);
+  const [edges, setEdges] = useState<GraphEdge[]>([]);
   const [layoutError, setLayoutError] = useState(false);
 
   // Load static graph layout once
   useEffect(() => {
-    fetch('/graph_layout.json')
-      .then((r) => r.json())
-      .then((data: GraphLayoutNode[]) => setLayout(data))
+    Promise.all([
+      fetch('/graph_layout.json').then((r) => r.json()),
+      api.getGraph()
+    ])
+      .then(([layoutData, graphData]) => {
+        setLayout(layoutData);
+        setEdges(graphData.edges);
+      })
       .catch(() => {
         setLayoutError(true);
         // Fallback: circular layout for 207 nodes
@@ -65,15 +76,17 @@ function App() {
             variants={panelVariants}
             initial="hidden"
             animate="visible"
-            className="flex-1 relative min-h-0"
+            className="flex-1 relative min-h-0 p-3"
           >
-            {layoutError && (
-              <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10 text-[11px] font-mono text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded px-3 py-1.5">
-                ⚠ Network topology unavailable — showing sensor positions only (circular layout)
-              </div>
-            )}
-            <StorytellingBanner />
-            {layout.length > 0 && <NetworkGraph layout={layout} />}
+            <div className="relative w-full h-full overflow-hidden rounded-xl border border-[#2A3545] bg-[#121820] shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
+              {layoutError && (
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10 text-[11px] font-mono text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/30 rounded px-3 py-1.5">
+                  ⚠ Network topology unavailable — showing sensor positions only (circular layout)
+                </div>
+              )}
+              <StorytellingBanner />
+              {layout.length > 0 && <NetworkGraph layout={layout} edges={edges} />}
+            </div>
           </motion.div>
 
           {/* Event Timeline — bottom strip */}
@@ -82,7 +95,7 @@ function App() {
             variants={panelVariants}
             initial="hidden"
             animate="visible"
-            className="h-48 border-t border-[#2A3545] shrink-0"
+            className="h-48 border-t border-[#2A3545] shrink-0 relative z-10 shadow-[0_-10px_30px_rgba(0,0,0,0.15)] bg-[#0B0F14]"
           >
             <EventTimeline />
           </motion.div>

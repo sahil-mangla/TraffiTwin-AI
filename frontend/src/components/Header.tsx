@@ -40,7 +40,7 @@ export function Header() {
   }[systemHealth];
 
   return (
-    <header className="flex items-center justify-between px-6 py-3 border-b border-[#2A3545] bg-[#0B0F14] shrink-0">
+    <header className="flex items-center justify-between px-6 py-3 border-b border-[#2A3545] shrink-0 relative z-20 shadow-[0_4px_20px_rgba(0,0,0,0.15)]" style={{ background: 'var(--premium-card-bg)' }}>
       {/* Brand */}
       <div className="flex items-center gap-3">
         <div className="w-7 h-7 rounded-sm bg-[#3B82F6] flex items-center justify-center">

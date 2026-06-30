@@ -19,6 +19,7 @@ export interface SystemState {
   metrics: TwinMetrics;
   timestamp: string;
   system_health: 'healthy' | 'degraded' | 'critical';
+  latest_incident_summary?: string;
 }
 
 export interface GraphNode {

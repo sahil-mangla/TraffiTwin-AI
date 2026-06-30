@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTwinStore } from '../store/twinStore';
-import type { GraphLayoutNode, SensorInfo, NodeStatus } from '../types/api';
+import type { GraphLayoutNode, SensorInfo, NodeStatus, GraphEdge } from '../types/api';
 
 interface Props {
   layout: GraphLayoutNode[];
+  edges?: GraphEdge[];
 }
 
-const NODE_R = 5;
-const FAIL_R = 8;
+const NODE_R = 4;
+const FAIL_R = 10;
 const RECON_R = 6;
 
 const COLORS: Record<NodeStatus, string> = {
@@ -45,7 +46,7 @@ function drawCheck(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
   ctx.stroke();
 }
 
-export function NetworkGraph({ layout }: Props) {
+export function NetworkGraph({ layout, edges = [] }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
@@ -123,6 +124,20 @@ export function NetworkGraph({ layout }: Props) {
 
     ctx.clearRect(0, 0, W, H);
 
+    // Draw edges
+    ctx.lineWidth = 0.5;
+    for (const edge of edges) {
+      const src = coordsRef.current.get(edge.source);
+      const tgt = coordsRef.current.get(edge.target);
+      if (src && tgt) {
+        ctx.strokeStyle = `rgba(139, 160, 186, ${Math.min(0.6, edge.weight * 0.4)})`;
+        ctx.beginPath();
+        ctx.moveTo(src.cx, src.cy);
+        ctx.lineTo(tgt.cx, tgt.cy);
+        ctx.stroke();
+      }
+    }
+
     for (const node of layout) {
       const coord = coordsRef.current.get(node.id);
       if (!coord) continue;
@@ -156,24 +171,41 @@ export function NetworkGraph({ layout }: Props) {
         ctx.strokeStyle = `rgba(239,68,68,${alpha})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(239,68,68,0.8)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
       }
 
       // Node body
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fillStyle = color + (status === 'healthy' ? 'CC' : 'FF');
+      
+      if (status === 'reconstructed') {
+        ctx.shadowColor = 'rgba(139, 92, 246, 0.8)';
+        ctx.shadowBlur = 10;
+      } else {
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      }
+      
       ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
 
       // State icon
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.5;
       ctx.lineCap = 'round';
       if (status === 'failed') drawCross(ctx, cx, cy, r);
       if (status === 'reconstructed') drawCheck(ctx, cx, cy, r);
     }
 
     animRef.current = requestAnimationFrame(draw);
-  }, [layout]);
+  }, [layout, edges]);
 
   useEffect(() => {
     animRef.current = requestAnimationFrame(draw);

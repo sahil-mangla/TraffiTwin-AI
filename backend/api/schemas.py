@@ -47,6 +47,33 @@ class GraphResponse(BaseModel):
     nodes: List[GraphNode]
     edges: List[GraphEdge]
 
+# ── New: Incident Summaries ───────────────────────────────────────────────────
+
+class IncidentSummaryResponse(BaseModel):
+    incident_id: str
+    timestamp: str
+    sensor_id: Optional[int] = None
+    event_type: str
+    summary: str
+    is_ai: bool
+
+class GenerateSummaryRequest(BaseModel):
+    sensor_id: Optional[int] = None
+    event_type: str
+    failure_duration_minutes: float
+    reconstructed: bool
+    observability: float
+    mae: float
+    rmse: float
+    active_failures: int
+    reconstructed_nodes: int
+    affected_neighbors: List[int]
+    neighbor_speed_change_pct: float
+    network_status: str
+
+class GenerateSummaryResponse(BaseModel):
+    summary: str
+
 # ── New: Unified system state ─────────────────────────────────────────────────
 
 class SystemStateResponse(BaseModel):
@@ -54,3 +81,4 @@ class SystemStateResponse(BaseModel):
     metrics: Dict[str, Any]
     timestamp: str
     system_health: str  # "healthy" | "degraded" | "critical"
+    latest_incident_summary: Optional[str] = None

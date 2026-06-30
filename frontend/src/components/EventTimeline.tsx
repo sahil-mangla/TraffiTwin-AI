@@ -22,7 +22,7 @@ function EventRow({ event }: { event: TwinEvent }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.18, ease: 'easeOut' }}
-      className="flex items-start gap-2 px-3 py-2 rounded text-xs font-mono border"
+      className="flex items-start gap-2 px-3 py-2 rounded-md text-xs font-mono border shadow-sm"
       style={{
         backgroundColor: s.bg,
         borderColor: s.color + '33',
@@ -47,7 +47,7 @@ export function EventTimeline() {
 
   return (
     <section className="flex flex-col h-full" aria-label="Event Timeline">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[#2A3545] shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[#2A3545] shrink-0" style={{ background: 'var(--premium-card-bg)' }}>
         <p className="text-[10px] font-mono text-[#8BA0BA] tracking-widest">EVENT LOG</p>
         {events.length > 0 && (
           <button
