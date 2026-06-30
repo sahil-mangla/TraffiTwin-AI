@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { TwinSnapshot, TwinMetrics, TwinEvent, SystemState } from '../types/api';
+import { api } from '../api/trafitwin';
 
 interface TwinStore {
   // ── Data ──────────────────────────────────────────────────────────────────
@@ -20,6 +21,7 @@ interface TwinStore {
 
   // ── AI Operations Analyst ──────────────────────────────────────────────────
   latestIncidentSummary: string | null;
+  isAnalyzing: boolean;
 
   // ── Actions ───────────────────────────────────────────────────────────────
   setSystemState: (state: SystemState, prevSnapshot: TwinSnapshot | null) => void;
@@ -30,6 +32,7 @@ interface TwinStore {
   setLoading: (v: boolean) => void;
   setSelectedSensor: (id: number | null) => void;
   dismissBanner: () => void;
+  runAnalysis: () => Promise<void>;
 }
 
 let eventCounter = 0;
@@ -50,6 +53,7 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
   selectedSensorId: null,
   activeBanner: null,
   latestIncidentSummary: null,
+  isAnalyzing: false,
 
   setSystemState(state, prevSnapshot) {
     const { snapshot: prev } = get();
@@ -159,5 +163,17 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
 
   dismissBanner() {
     set({ activeBanner: null });
+  },
+
+  async runAnalysis() {
+    set({ isAnalyzing: true });
+    try {
+      const res = await api.analyzeCurrentState();
+      set({ latestIncidentSummary: res.summary });
+    } catch (e) {
+      console.error("AI Analysis failed:", e);
+    } finally {
+      set({ isAnalyzing: false });
+    }
   },
 }));

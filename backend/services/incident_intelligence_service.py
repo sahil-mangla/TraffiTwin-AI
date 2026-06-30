@@ -44,14 +44,16 @@ class IncidentIntelligenceService:
         
         # Latest 20 summaries
         self.summaries_cache: List[Dict[str, Any]] = []
+        self.latest_summary_text: Optional[str] = None
 
     def get_latest_summaries(self) -> List[Dict[str, Any]]:
         return self.summaries_cache
 
     def get_latest_summary_text(self) -> Optional[str]:
-        if self.summaries_cache:
-            return self.summaries_cache[0]["summary"]
-        return None
+        return self.latest_summary_text
+
+    def clear_latest_summary(self):
+        self.latest_summary_text = None
 
     def build_incident_object(self, twin: TwinService, event_type: str, sensor_id: Optional[int] = None, duration: Optional[int] = None) -> Dict[str, Any]:
         snapshot = twin.get_snapshot()
@@ -150,6 +152,7 @@ class IncidentIntelligenceService:
                 logger.info(f"Duplicate event {event_type} on Sensor {sensor_id} detected. Skipping Gemini.")
 
         self.cache_report(incident, final_summary, is_ai)
+        self.latest_summary_text = final_summary
         return final_summary
 
     def cache_report(self, incident: dict, summary: str, is_ai: bool):
@@ -171,12 +174,15 @@ class IncidentIntelligenceService:
         """
         deterministic_report = self.rule_based_reporter.generate_report(incident)
         if not self.rate_limiter.allow() or self.circuit_breaker.is_open():
+            self.latest_summary_text = deterministic_report
             return deterministic_report
             
         try:
             enriched = await self.gemini_service.enrich_report(incident, deterministic_report)
             self.circuit_breaker.record_success()
+            self.latest_summary_text = enriched
             return enriched
         except Exception:
             self.circuit_breaker.record_failure()
+            self.latest_summary_text = deterministic_report
             return deterministic_report

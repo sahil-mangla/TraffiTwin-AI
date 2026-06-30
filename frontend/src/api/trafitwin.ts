@@ -35,6 +35,12 @@ export const api = {
       body: JSON.stringify({ sensor_id, duration }),
     }),
 
+  /** Run AI analysis on the current digital twin state. */
+  analyzeCurrentState: (): Promise<{ summary: string }> =>
+    request('/analyze-current-state', {
+      method: 'POST',
+    }),
+
   /** Health check. */
   getHealth: (): Promise<{ status: string; version: string }> => request('/health'),
 };

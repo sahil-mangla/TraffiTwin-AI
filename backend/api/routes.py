@@ -97,7 +97,7 @@ async def simulate_failure(
 ):
     try:
         twin.inject_failure(sensor_id=req.sensor_id, duration=req.duration)
-        await incident.process_event(twin, "sensor_failure", sensor_id=req.sensor_id, duration=req.duration)
+        incident.clear_latest_summary()
         return SimulateFailureResponse(
             status="success",
             message=f"Injected failure on sensor {req.sensor_id} for {req.duration} steps."
@@ -112,28 +112,8 @@ async def step_simulation(
     twin: TwinService = Depends(get_twin_service),
     incident: Any = Depends(get_incident_service)
 ):
-    # Pre-step metrics
-    pre_snapshot = twin.get_snapshot()
-    pre_masks = {str(k): bool(v) for k, v in pre_snapshot["masks"].items()}
-    pre_obs = calculate_observability(pre_snapshot, twin.state.num_nodes)
-
     twin.step(steps=req.steps)
-
-    # Post-step metrics
-    post_snapshot = twin.get_snapshot()
-    post_masks = {str(k): bool(v) for k, v in post_snapshot["masks"].items()}
-    post_obs = calculate_observability(post_snapshot, twin.state.num_nodes)
-
-    # Recovery checks
-    for sensor_id_str, was_failed in pre_masks.items():
-        is_failed = post_masks.get(sensor_id_str, False)
-        if was_failed and not is_failed:
-            sensor_id = int(sensor_id_str)
-            await incident.process_event(twin, "sensor_recovery", sensor_id=sensor_id)
-
-    # Observability drop check (> 5%)
-    if pre_obs - post_obs > 5.0:
-        await incident.process_event(twin, "observability_drop")
+    incident.clear_latest_summary()
 
     return StepResponse(
         current_time=twin.state.current_time_step,
@@ -163,4 +143,24 @@ async def generate_incident_summary(
 ):
     payload = req.model_dump()
     summary = await incident.generate_from_payload(payload)
+    return GenerateSummaryResponse(summary=summary)
+
+
+@router.post("/analyze-current-state", response_model=GenerateSummaryResponse)
+async def analyze_current_state(
+    twin: TwinService = Depends(get_twin_service),
+    incident: Any = Depends(get_incident_service)
+):
+    snapshot = twin.get_snapshot()
+    # Find any active failures to determine if we should report a failure or nominal check
+    failed_sensors = [int(k) for k, failed in snapshot["masks"].items() if failed]
+    
+    if failed_sensors:
+        sensor_id = failed_sensors[0]
+        event_type = "sensor_failure"
+        summary = await incident.process_event(twin, event_type, sensor_id=sensor_id)
+    else:
+        event_type = "system_check"
+        summary = await incident.process_event(twin, event_type)
+        
     return GenerateSummaryResponse(summary=summary)

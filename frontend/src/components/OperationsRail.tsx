@@ -69,6 +69,8 @@ export function OperationsRail() {
   const snapshot = useTwinStore((s) => s.snapshot);
   const isLoading = useTwinStore((s) => s.isLoading);
   const latestIncidentSummary = useTwinStore((s) => s.latestIncidentSummary);
+  const isAnalyzing = useTwinStore((s) => s.isAnalyzing);
+  const runAnalysis = useTwinStore((s) => s.runAnalysis);
 
   if (isLoading || !metrics || !snapshot) {
     return (
@@ -145,14 +147,32 @@ export function OperationsRail() {
         </div>
 
         {/* AI Operations Analyst */}
-        <div className="border-t border-[#2A3545] pt-3 mt-1">
+        <div className="border-t border-[#2A3545] pt-3 mt-1 flex flex-col min-h-0">
           <p className="text-[10px] font-mono text-[#8BA0BA] tracking-widest mb-2 uppercase">AI Operations Analyst</p>
-          <div className="rounded-xl p-3 relative overflow-hidden text-xs font-mono leading-relaxed" style={{ background: 'var(--premium-card-bg)', border: '1px solid var(--premium-card-border)', boxShadow: 'var(--premium-card-shadow)' }}>
+          <div className="rounded-xl p-3 relative overflow-hidden text-xs font-mono leading-relaxed" style={{ background: 'var(--premium-card-bg)', border: '1px solid var(--premium-card-border)', boxShadow: 'var(--premium-card-shadow)', minHeight: '80px' }}>
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#E8EDF4]/10 to-transparent"></div>
-            {latestIncidentSummary ? (
-              <div className="text-[#E8EDF4]">{latestIncidentSummary}</div>
+            {isAnalyzing ? (
+              <div className="flex flex-col items-center justify-center py-4 text-[#8B5CF6] gap-2">
+                <span className="animate-spin text-lg">✦</span>
+                <span className="text-[11px] text-[#8BA0BA]">Analyzing digital twin state...</span>
+              </div>
+            ) : latestIncidentSummary ? (
+              <div className="text-[#E8EDF4] break-words">{latestIncidentSummary}</div>
             ) : (
-              <div className="text-[#8BA0BA] italic">No active incidents. System operating under nominal conditions.</div>
+              <div className="flex flex-col gap-2 items-center text-center">
+                <div className="text-[#8BA0BA] italic text-[11px]">
+                  {activeFailed > 0 
+                    ? 'Anomaly detected. AI diagnostic standby.' 
+                    : 'System nominal. Ready for status check.'}
+                </div>
+                <button
+                  onClick={() => runAnalysis()}
+                  className="w-full py-1.5 px-3 rounded-lg border border-[#8B5CF6]/40 hover:border-[#8B5CF6] bg-[#8B5CF6]/10 hover:bg-[#8B5CF6]/20 text-[#C084FC] hover:text-white transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span>✦</span>
+                  <span>{activeFailed > 0 ? 'Run AI Anomaly Diagnostic' : 'Analyze System State'}</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
