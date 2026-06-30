@@ -1,14 +1,5 @@
-import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTwinStore } from '../store/twinStore';
-
-function formatAge(date: Date | null): string {
-  if (!date) return '—';
-  const secs = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (secs < 5) return 'just now';
-  if (secs < 60) return `${secs}s ago`;
-  return `${Math.floor(secs / 60)}m ago`;
-}
 
 function StatPill({
   label,
@@ -38,20 +29,8 @@ function StatPill({
 
 export function Header() {
   const systemHealth = useTwinStore((s) => s.systemHealth);
-  const isAutoplay = useTwinStore((s) => s.isAutoplay);
-  const lastUpdated = useTwinStore((s) => s.lastUpdated);
   const snapshot = useTwinStore((s) => s.snapshot);
   const metrics = useTwinStore((s) => s.metrics);
-  const [now, setNow] = useState(new Date());
-  const [age, setAge] = useState('—');
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      setNow(new Date());
-      setAge(formatAge(lastUpdated));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [lastUpdated]);
 
   const healthColor = {
     healthy: '#10B981',
@@ -140,29 +119,10 @@ export function Header() {
             color="#8BA0BA"
           />
         </div>
-
-        {/* Separator */}
-        <div className="w-px h-6 bg-[#2A3545]" />
-
-        {/* Sim state */}
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-1.5 h-1.5 rounded-full ${isAutoplay ? 'animate-pulse' : ''}`}
-            style={{ background: isAutoplay ? '#3B82F6' : '#2A3545' }}
-          />
-          <span className="text-[11px] font-mono text-[#8BA0BA] tracking-widest">
-            {isAutoplay ? 'AUTO PLAY' : 'STANDBY'}
-          </span>
-        </div>
       </div>
 
-      {/* Right: time */}
-      <div className="text-right">
-        <div className="text-xs font-mono text-[#E8EDF4]">
-          {now.toLocaleTimeString('en-US', { hour12: false })}
-        </div>
-        <div className="text-[10px] font-mono text-[#8BA0BA]">Updated {age}</div>
-      </div>
+      {/* Right spacer for branding visual balance */}
+      <div className="w-48 hidden md:block" />
     </header>
   );
 }
