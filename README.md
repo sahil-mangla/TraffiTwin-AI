@@ -9,7 +9,6 @@
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-2.0%2B-4285F4?logo=google&logoColor=white)](https://github.com/google/agent-development-kit)
 [![Gemini](https://img.shields.io/badge/Gemini-2.5%20Flash-F4B400?logo=googlegemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Hackathon%20Winner-brightgreen)](#)
 
 ---
 
@@ -144,35 +143,6 @@ To ensure continuous operation in production mission-control centers, the ADK ag
 
 ---
 
-## Dashboard Showcase
-
-<details>
-<summary><b>View Operations Dashboard Screenshots</b></summary>
-
-### 1. Mission Briefing
-An interactive modal showing mission protocols and system capabilities before launching the main console.
-![Mission Briefing](https://raw.githubusercontent.com/sahil-mangla/TraffiTwin-AI/main/docs/screenshots/briefing.png)
-
-### 2. Operations Dashboard
-The main command center visualization displaying real-time traffic speeds, active failures, and reconstruction metrics.
-![Operations Dashboard](https://raw.githubusercontent.com/sahil-mangla/TraffiTwin-AI/main/docs/screenshots/dashboard.png)
-
-### 3. Failure Injection
-Interactive map nodes allow operators to right-click and simulate physical sensor hardware failures instantly.
-![Failure Injection](https://raw.githubusercontent.com/sahil-mangla/TraffiTwin-AI/main/docs/screenshots/failure_injection.png)
-
-### 4. AI Reconstruction
-Visual highlight of nodes undergoing active virtual sensor reconstruction via LightGBM models.
-![AI Reconstruction](https://raw.githubusercontent.com/sahil-mangla/TraffiTwin-AI/main/docs/screenshots/reconstruction.png)
-
-### 5. Embedded Operations Analyst
-The conversational AI feed showing active analyses, system audits, and queries.
-![Operations Analyst](https://raw.githubusercontent.com/sahil-mangla/TraffiTwin-AI/main/docs/screenshots/analyst.png)
-
-</details>
-
----
-
 ## Repository Structure
 
 ```
@@ -284,19 +254,6 @@ This project draws inspiration from state-of-the-art spatial-temporal traffic pr
 2.  **Graph WaveNet:** Wu et al., *Graph WaveNet for Deep Spatial-Temporal Graph Modeling*, IJCAI 2019.
 3.  **GRIN:** Cini et al., *Filling the Gaps: Multivariate Time Series Imputation by Graph Recurrent Networks*, ICLR 2022.
 4.  **LightGBM:** Ke et al., *LightGBM: A Highly Efficient Light Gradient Boosting Decision Tree*, NeurIPS 2017.
-
----
-
-## Roadmap
-
-- [x] High-fidelity METR-LA dataset ingestion pipeline
-- [x] LightGBM-based self-healing reconstruction engine
-- [x] Web dashboard with failure injection support
-- [x] Google ADK Traffic Operations Analyst integration
-- [x] Monospace dashboard theme and layout alignment
-- [x] Glassmorphic startup mission briefing console
-- [ ] Multi-hop spatial Graph Neural Network (GNN) model addition
-- [ ] Containerized deployment to Google Cloud Run
 
 ---
 
