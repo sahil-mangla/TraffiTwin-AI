@@ -67,7 +67,7 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
       const wasFailed = prevMasks[id] === true;
 
       if (failed && !wasFailed) {
-        // New fault
+        // New fault only (AI reconstruction will engage once simulation steps)
         newEvents.push({
           id: makeId(),
           timestamp: new Date().toISOString(),
@@ -75,21 +75,8 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
           message: `Sensor ${id} went offline`,
           sensor_id: Number(id),
         });
-        newEvents.push({
-          id: makeId(),
-          timestamp: new Date().toISOString(),
-          severity: 'AI_RESPONSE',
-          message: `AI reconstruction engaged for Sensor ${id}`,
-          sensor_id: Number(id),
-        });
         // Trigger fault banner
         set({ activeBanner: { type: 'fault', message: 'SENSOR FAILURE DETECTED', subtitle: `Sensor ${id} offline` } });
-        setTimeout(() => {
-          const banner = get().activeBanner;
-          if (banner?.type === 'fault') {
-            set({ activeBanner: { type: 'ai', message: 'AI RECONSTRUCTION ENGAGED', subtitle: 'Recovering observability' } });
-          }
-        }, 2000);
       }
 
       if (!failed && wasFailed) {
@@ -109,6 +96,22 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
           const banner = get().activeBanner;
           if (banner?.type === 'recovery') set({ activeBanner: null });
         }, 4000);
+      }
+    }
+
+    // Diff reconstructions — detect when AI actually starts reconstructing a failed sensor
+    const prevRecons = prev?.reconstructions ?? {};
+    for (const id of Object.keys(recons)) {
+      const wasRecon = id in prevRecons;
+      if (!wasRecon) {
+        newEvents.push({
+          id: makeId(),
+          timestamp: new Date().toISOString(),
+          severity: 'AI_RESPONSE',
+          message: `AI reconstruction engaged for Sensor ${id}`,
+          sensor_id: Number(id),
+        });
+        set({ activeBanner: { type: 'ai', message: 'AI RECONSTRUCTION ENGAGED', subtitle: 'Recovering observability' } });
       }
     }
 
