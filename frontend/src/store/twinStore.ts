@@ -58,6 +58,7 @@ interface TwinStore {
   runQuickAction: (action: AnalysisSource, customQuery?: string) => Promise<void>;
   openBriefing: () => void;
   closeBriefing: () => void;
+  clearAnalysisFeed: () => void;
 }
 
 let eventCounter = 0;
@@ -251,5 +252,9 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
 
   closeBriefing() {
     set({ isBriefingOpen: false });
+  },
+
+  clearAnalysisFeed() {
+    set({ analysisFeed: [] });
   },
 }));

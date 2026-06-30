@@ -236,6 +236,7 @@ export function OperationsRail() {
   const isAnalyzing = useTwinStore((s) => s.isAnalyzing);
   const analysisFeed = useTwinStore((s) => s.analysisFeed);
   const runQuickAction = useTwinStore((s) => s.runQuickAction);
+  const clearAnalysisFeed = useTwinStore((s) => s.clearAnalysisFeed);
 
   const [customQuery, setCustomQuery] = useState('');
   const feedRef = useRef<HTMLDivElement>(null);
@@ -398,9 +399,17 @@ export function OperationsRail() {
               Analysis Feed
             </p>
             {analysisFeed.length > 0 && (
-              <span className="text-[8px] font-mono text-[#2A3545]">
-                {analysisFeed.length}/20
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => clearAnalysisFeed()}
+                  className="text-[8px] font-mono text-[#8BA0BA] hover:text-[#EF4444] transition-all duration-150 cursor-pointer uppercase border border-[#2A3545] rounded px-1.5 py-0.5 bg-[#121820]/45 hover:bg-[#EF4444]/10 hover:border-[#EF4444]/35"
+                >
+                  Clear
+                </button>
+                <span className="text-[8px] font-mono text-[#2A3545]">
+                  {analysisFeed.length}/20
+                </span>
+              </div>
             )}
           </div>
 
