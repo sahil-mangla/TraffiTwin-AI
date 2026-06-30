@@ -10,10 +10,38 @@ function formatAge(date: Date | null): string {
   return `${Math.floor(secs / 60)}m ago`;
 }
 
+function StatPill({
+  label,
+  value,
+  color,
+  dot,
+}: {
+  label: string;
+  value: string | number;
+  color: string;
+  dot?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center" style={{ minWidth: '56px' }}>
+      <div className="flex items-center gap-1">
+        {dot && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />}
+        <span className="text-sm font-mono font-bold leading-none" style={{ color }}>
+          {value}
+        </span>
+      </div>
+      <span className="text-[9px] font-mono text-[#8BA0BA] tracking-widest mt-0.5 uppercase whitespace-nowrap">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export function Header() {
   const systemHealth = useTwinStore((s) => s.systemHealth);
   const isAutoplay = useTwinStore((s) => s.isAutoplay);
   const lastUpdated = useTwinStore((s) => s.lastUpdated);
+  const snapshot = useTwinStore((s) => s.snapshot);
+  const metrics = useTwinStore((s) => s.metrics);
   const [now, setNow] = useState(new Date());
   const [age, setAge] = useState('—');
 
@@ -26,10 +54,10 @@ export function Header() {
   }, [lastUpdated]);
 
   const healthColor = {
-    healthy: 'text-[#10B981]',
-    degraded: 'text-[#F59E0B]',
-    critical: 'text-[#EF4444]',
-    unknown: 'text-[#8BA0BA]',
+    healthy: '#10B981',
+    degraded: '#F59E0B',
+    critical: '#EF4444',
+    unknown: '#8BA0BA',
   }[systemHealth];
 
   const healthLabel = {
@@ -39,8 +67,15 @@ export function Header() {
     unknown: 'CONNECTING…',
   }[systemHealth];
 
+  const activeFailed = snapshot ? Object.values(snapshot.masks).filter(Boolean).length : 0;
+  const activeRecon = snapshot ? Object.keys(snapshot.reconstructions).length : 0;
+  const rmse = metrics?.rmse ?? 0;
+
   return (
-    <header className="flex items-center justify-between px-6 py-3 border-b border-[#2A3545] shrink-0 relative z-20 shadow-[0_4px_20px_rgba(0,0,0,0.15)]" style={{ background: 'var(--premium-card-bg)' }}>
+    <header
+      className="flex items-center justify-between px-6 py-2.5 border-b border-[#2A3545] shrink-0 relative z-20 shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+      style={{ background: 'var(--premium-card-bg)' }}
+    >
       {/* Brand */}
       <div className="flex items-center gap-3">
         <div className="w-7 h-7 rounded-sm bg-[#3B82F6] flex items-center justify-center">
@@ -62,32 +97,59 @@ export function Header() {
         </div>
       </div>
 
-      {/* Center: status indicators */}
-      <div className="flex items-center gap-8">
+      {/* Center: status + live metric pills */}
+      <div className="flex items-center gap-6">
         {/* System health */}
         <div className="flex items-center gap-2" role="status" aria-label={`System health: ${healthLabel}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={systemHealth}
-              className={`w-2 h-2 rounded-full ${
-                systemHealth === 'healthy' ? 'bg-[#10B981]' :
-                systemHealth === 'degraded' ? 'bg-[#F59E0B]' :
-                systemHealth === 'critical' ? 'bg-[#EF4444]' : 'bg-[#8BA0BA]'
-              }`}
+              className="w-2 h-2 rounded-full"
+              style={{ background: healthColor }}
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
               transition={{ duration: 0.2 }}
             />
           </AnimatePresence>
-          <span className={`text-xs font-mono font-semibold tracking-widest ${healthColor}`}>
+          <span className="text-xs font-mono font-semibold tracking-widest" style={{ color: healthColor }}>
             {healthLabel}
           </span>
         </div>
 
+        {/* Separator */}
+        <div className="w-px h-6 bg-[#2A3545]" />
+
+        {/* Live Stat Pills — DustShield-style */}
+        <div className="flex items-center gap-5">
+          <StatPill
+            label="ACTIVE FAILURES"
+            value={activeFailed}
+            color={activeFailed > 0 ? '#EF4444' : '#10B981'}
+            dot
+          />
+          <StatPill
+            label="AI RECONSTRUCTED"
+            value={activeRecon}
+            color={activeRecon > 0 ? '#8B5CF6' : '#8BA0BA'}
+            dot
+          />
+          <StatPill
+            label="RMSE"
+            value={rmse > 0 ? `${rmse.toFixed(2)} mph` : '—'}
+            color="#8BA0BA"
+          />
+        </div>
+
+        {/* Separator */}
+        <div className="w-px h-6 bg-[#2A3545]" />
+
         {/* Sim state */}
         <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${isAutoplay ? 'bg-[#3B82F6] animate-pulse' : 'bg-[#2A3545]'}`} />
+          <div
+            className={`w-1.5 h-1.5 rounded-full ${isAutoplay ? 'animate-pulse' : ''}`}
+            style={{ background: isAutoplay ? '#3B82F6' : '#2A3545' }}
+          />
           <span className="text-[11px] font-mono text-[#8BA0BA] tracking-widest">
             {isAutoplay ? 'AUTO PLAY' : 'STANDBY'}
           </span>
