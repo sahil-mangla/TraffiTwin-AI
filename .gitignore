@@ -19,4 +19,4 @@ node_modules/
 dist/
 *.log
 .codebase-memory/
-
+DEPLOYMENT_GUIDE.md
