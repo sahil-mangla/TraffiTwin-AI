@@ -2,6 +2,22 @@ import { create } from 'zustand';
 import type { TwinSnapshot, TwinMetrics, TwinEvent, SystemState } from '../types/api';
 import { api } from '../api/trafitwin';
 
+// ── Analysis Feed Types ─────────────────────────────────────────────────────
+export type AnalysisSource =
+  | 'analyze_system_state'
+  | 'current_failures'
+  | 'recent_incidents'
+  | 'performance_metrics'
+  | 'custom_query';
+
+export interface AnalysisCard {
+  id: string;
+  timestamp: string;
+  title: string;
+  response: string;
+  sources: AnalysisSource[];
+}
+
 interface TwinStore {
   // ── Data ──────────────────────────────────────────────────────────────────
   snapshot: TwinSnapshot | null;
@@ -23,6 +39,12 @@ interface TwinStore {
   latestIncidentSummary: string | null;
   isAnalyzing: boolean;
 
+  // ── Analysis Feed ──────────────────────────────────────────────────────────
+  analysisFeed: AnalysisCard[];
+
+  // ── Startup Briefing Modal ──────────────────────────────────────────────────
+  isBriefingOpen: boolean;
+
   // ── Actions ───────────────────────────────────────────────────────────────
   setSystemState: (state: SystemState, prevSnapshot: TwinSnapshot | null) => void;
   addEvent: (event: Omit<TwinEvent, 'id' | 'timestamp'>) => void;
@@ -33,13 +55,29 @@ interface TwinStore {
   setSelectedSensor: (id: number | null) => void;
   dismissBanner: () => void;
   runAnalysis: () => Promise<void>;
+  runQuickAction: (action: AnalysisSource, customQuery?: string) => Promise<void>;
+  openBriefing: () => void;
+  closeBriefing: () => void;
 }
 
 let eventCounter = 0;
+let cardCounter = 0;
 
 function makeId() {
   return `evt-${Date.now()}-${++eventCounter}`;
 }
+
+function makeCardId() {
+  return `card-${Date.now()}-${++cardCounter}`;
+}
+
+const QUICK_ACTION_TITLES: Record<AnalysisSource, string> = {
+  analyze_system_state: 'System State Analysis',
+  current_failures: 'Active Failure Report',
+  recent_incidents: 'Incident Summary',
+  performance_metrics: 'Performance Metrics Report',
+  custom_query: 'Custom Analysis',
+};
 
 export const useTwinStore = create<TwinStore>((set, get) => ({
   snapshot: null,
@@ -54,6 +92,8 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
   activeBanner: null,
   latestIncidentSummary: null,
   isAnalyzing: false,
+  analysisFeed: [],
+  isBriefingOpen: true,
 
   setSystemState(state, prevSnapshot) {
     const { snapshot: prev } = get();
@@ -67,7 +107,6 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
       const wasFailed = prevMasks[id] === true;
 
       if (failed && !wasFailed) {
-        // New fault only (AI reconstruction will engage once simulation steps)
         newEvents.push({
           id: makeId(),
           timestamp: new Date().toISOString(),
@@ -75,12 +114,10 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
           message: `Sensor ${id} went offline`,
           sensor_id: Number(id),
         });
-        // Trigger fault banner
         set({ activeBanner: { type: 'fault', message: 'SENSOR FAILURE DETECTED', subtitle: `Sensor ${id} offline` } });
       }
 
       if (!failed && wasFailed) {
-        // Recovery
         const wasReconstructed = id in (prev?.reconstructions ?? {});
         newEvents.push({
           id: makeId(),
@@ -113,12 +150,6 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
         });
         set({ activeBanner: { type: 'ai', message: 'AI RECONSTRUCTION ENGAGED', subtitle: 'Recovering observability' } });
       }
-    }
-
-    // If active reconstructions exist mid-step, show ongoing AI banner
-    const reconIds = Object.keys(recons);
-    if (reconIds.length > 0 && newEvents.length === 0) {
-      // Steady-state reconstruction — no new events, just keep working silently
     }
 
     set((s) => ({
@@ -174,9 +205,51 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
       const res = await api.analyzeCurrentState();
       set({ latestIncidentSummary: res.summary });
     } catch (e) {
-      console.error("AI Analysis failed:", e);
+      console.error('AI Analysis failed:', e);
     } finally {
       set({ isAnalyzing: false });
     }
+  },
+
+  async runQuickAction(action: AnalysisSource, customQuery?: string) {
+    set({ isAnalyzing: true });
+    try {
+      const res = await api.analyzeCurrentState();
+      const card: AnalysisCard = {
+        id: makeCardId(),
+        timestamp: new Date().toISOString(),
+        title: customQuery
+          ? `Query: ${customQuery.length > 40 ? customQuery.slice(0, 40) + '…' : customQuery}`
+          : QUICK_ACTION_TITLES[action],
+        response: res.summary,
+        sources: [action],
+      };
+      set((s) => ({
+        analysisFeed: [card, ...s.analysisFeed].slice(0, 20),
+        latestIncidentSummary: res.summary,
+      }));
+    } catch (e) {
+      console.error('Quick action failed:', e);
+      const errorCard: AnalysisCard = {
+        id: makeCardId(),
+        timestamp: new Date().toISOString(),
+        title: QUICK_ACTION_TITLES[action],
+        response: 'Analysis failed. Backend may be offline or unavailable.',
+        sources: [action],
+      };
+      set((s) => ({
+        analysisFeed: [errorCard, ...s.analysisFeed].slice(0, 20),
+      }));
+    } finally {
+      set({ isAnalyzing: false });
+    }
+  },
+
+  openBriefing() {
+    set({ isBriefingOpen: true });
+  },
+
+  closeBriefing() {
+    set({ isBriefingOpen: false });
   },
 }));

@@ -12,6 +12,7 @@ import { useSystemState } from './hooks/useSystemState';
 import { useAutoPlay } from './hooks/useAutoPlay';
 import { api } from './api/trafitwin';
 import type { GraphLayoutNode, GraphEdge } from './types/api';
+import { BriefingModal } from './components/BriefingModal';
 
 const panelVariants = {
   hidden: { opacity: 0, y: 12 },
@@ -52,6 +53,7 @@ function App() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#0B0F14] text-[#E8EDF4]">
       <BackendOfflineOverlay />
+      <BriefingModal />
 
       {/* Header */}
       <motion.div custom={0} variants={panelVariants} initial="hidden" animate="visible">
