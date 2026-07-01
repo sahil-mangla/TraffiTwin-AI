@@ -10,11 +10,15 @@ pinned: false
 
 # TraffiTwin AI
 
-> **Self-Healing Traffic Digital Twin for Resilient Smart City Operations**
+**Self-Healing Traffic Digital Twin for Resilient Smart City Operations**
+
+*   **Live Demo:** [traffitwin-ai.web.app](https://traffitwin-ai.web.app)
+*   **Backend API:** [sahilmangla-traffitwin-backend.hf.space](https://sahilmangla-traffitwin-backend.hf.space)
+*   **API Docs:** [sahilmangla-traffitwin-backend.hf.space/docs](https://sahilmangla-traffitwin-backend.hf.space/docs)
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18%2B-20232A?logo=react&logoColor=61DAFB)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-19%2B-20232A?logo=react&logoColor=61DAFB)](https://react.dev/)
 [![LightGBM](https://img.shields.io/badge/LightGBM-4.0%2B-FF8000?logo=lightgbm&logoColor=white)](https://github.com/microsoft/LightGBM)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-2.0%2B-4285F4?logo=google&logoColor=white)](https://github.com/google/agent-development-kit)
 [![Gemini](https://img.shields.io/badge/Gemini-2.5%20Flash-F4B400?logo=googlegemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
@@ -24,7 +28,7 @@ pinned: false
 
 ## Project Overview
 
-TraffiTwin AI is an AI-powered, self-healing traffic digital twin that preserves urban situational awareness during telemetry outages. 
+TraffiTwin AI is an AI-powered, self-healing traffic digital twin designed to maintain continuous situational awareness for urban transportation networks during telemetry outages. 
 
 Modern intelligent transportation systems (ITS) depend heavily on real-time sensor streams. When physical loop detectors or traffic cameras fail due to hardware malfunctions, network dropouts, or power issues, traffic control centers lose visibility into congestion and incident states. TraffiTwin AI resolves this vulnerability by detecting telemetry failures in real time and automatically reconstructing missing traffic states using spatial-temporal graph-aware machine learning models. 
 
@@ -34,7 +38,7 @@ The system operates on the standard **METR-LA** dataset and integrates a high-fi
 
 ## Problem Statement
 
-Traffic Management Centers (TMCs) rely on continuous telemetry to run signal timing plans, detect traffic anomalies, and coordinate emergency responses. Physical sensor outages create critical blind spots, causing traditional adaptive traffic control systems to degrade rapidly or fall back to static, inefficient historical timing patterns.
+Traffic Management Centers (TMCs) rely on continuous telemetry to coordinate emergency responses, run adaptive signal timing plans, and detect congestion anomalies. Physical sensor outages create critical blind spots, causing traditional adaptive traffic control systems to degrade rapidly or fall back to static, inefficient historical timing patterns.
 
 ```
 ┌────────────────┐     ┌────────────────┐     ┌─────────────────────┐     ┌────────────────────────┐
@@ -53,6 +57,32 @@ TraffiTwin AI bridges this gap, serving as an algorithmic backup layer that esti
 *   **Infrastructure Resilience:** Mitigates the risk of physical hardware degradation without requiring immediate, expensive field maintenance.
 *   **Robust Downstream Decision Support:** Feeds downstream routing services and signal optimization engines with stable, uninterrupted state estimates.
 *   **Production-Ready Hybrid Intelligence:** Deploys a self-healing sensor pipeline combining fast ML regressors with conversational LLM reasoning.
+
+---
+
+## Key Achievements
+
+*   **207 Traffic Sensors:** Full spatial-temporal simulation of the METR-LA sensor network topology.
+*   **34,272 Timesteps:** Thorough model evaluation and verification across extensive historical real-world telemetry.
+*   **97.03% Flow Coverage Ratio:** Observability restoration across the road network under sensor failure conditions.
+*   **2.48 mph Mean Absolute Error (MAE):** State reconstruction accuracy restoring traffic speeds close to ground-truth values.
+*   **Google ADK Operations Analyst:** Conversational AI reasoning directly over live digital twin telemetry.
+*   **Deterministic Fallback Engine:** Rule-based fallback mechanism guaranteeing uptime during LLM API throttling or network interruptions.
+*   **Firebase + Hugging Face Deployment:** Decoupled architecture serving assets globally with sub-second API roundtrips.
+
+---
+
+## Technology Stack
+
+| Layer | Component Technologies |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, Zustand, Tailwind CSS, React Force Graph 2D, Framer Motion |
+| **Backend** | Python 3.10, FastAPI, Uvicorn, CORS Middleware, Dotenv |
+| **Machine Learning** | LightGBM, NumPy, SciPy (METR-LA adjacency matrix propagation) |
+| **AI Agent** | Google Agent Development Kit (ADK) |
+| **LLM** | Google Gemini 2.5 Flash |
+| **Dataset** | METR-LA loop detector telemetry (207 sensors, 34,272 timesteps) |
+| **Deployment** | Firebase Hosting (Frontend), Hugging Face Spaces (Backend Docker container) |
 
 ---
 
@@ -115,41 +145,58 @@ The state reconstruction models are evaluated on root mean squared error (RMSE),
 
 ## Google Ecosystem Integration
 
-TraffiTwin AI harnesses Google’s developer ecosystem to deliver real-time operational analysis and scalable deployment.
+TraffiTwin AI leverages the Google developer ecosystem to power live operational intelligence and deliver high-availability hosting:
+
+*   **Gemini 2.5 Flash:** Acts as the cognitive core for the Operations Analyst, performing real-time reasoning over system states and diagnosing metrics.
+*   **Google Agent Development Kit (ADK):** Used to construct the conversational agent, coordinate tool registration (providing API-backed network queries), and format responses.
+*   **Google AI Studio:** Utilized for rapid prompt engineering, system instruction testing, and generating development keys for the Gemini API.
+*   **Firebase Hosting:** Delivers the compiled React 19 frontend assets globally with low latency, fast page load speeds, and robust static hosting.
+
+---
+
+## AI Operations Analyst
+
+The AI Operations Analyst is embedded directly inside the web dashboard to assist traffic operators in real time. 
+
+*   **Live Reasoning:** The ADK agent evaluates the live Digital Twin state, tracking sensor health, active failures, and speed metrics.
+*   **Real-time Queries:** Operators can converse with the agent directly in the panel to ask questions like *"Which sensors are currently offline?"* or *"Summarize recent incidents."*
+*   **Deterministic Fallback Logic:** If the Gemini API becomes unavailable due to rate limits, network issues, or credential errors, the analyst seamlessly falls back to a deterministic, rule-based reasoning engine. This guarantees continuous operational responses in the dashboard under all conditions.
 
 ```
-       User Query
-           │
-           ▼
-    Google ADK Agent
-           │
-           ▼
-    Gemini 2.5 Flash
-           │
-    ┌──────┴──────┐
-    │   Success?  │
-    └─┬─────────┬─┘
-      │ Yes     │ No
-      ▼         ▼
-  Response  Deterministic Fallback Engine
-                (Guaranteed Operational Output)
+        User Query
+            │
+            ▼
+     Google ADK Agent
+            │
+            ▼
+     Gemini 2.5 Flash
+            │
+     ┌──────┴──────┐
+     │   Success?  │
+     └─┬─────────┬─┘
+       │ Yes     │ No
+       ▼         ▼
+   Response  Deterministic Fallback Engine
+                 (Guaranteed Operational Output)
 ```
 
-### Embedded AI Operations Analyst
-The system features an embedded operations analyst powered by **Google Gemini 2.5 Flash** and the **Google Agent Development Kit (ADK)**. Directly accessible in the right-hand panel of the dashboard, the analyst evaluates live system state and answers queries about network health, sensor offline events, and metric anomalies.
+---
 
-> [!IMPORTANT]  
-> The analyst is embedded directly into the Operations Center UI and reasons over the live Digital Twin state in real time.
+## Deployment
 
-#### Example Operational Queries
-*   *"What is happening in the traffic network right now?"*
-*   *"Which sensors are currently offline?"*
-*   *"Is the network operational?"*
-*   *"Summarize recent incidents."*
-*   *"What is the speed reading and status of Sensor 42?"*
+*   **Frontend Web App:** [https://traffitwin-ai.web.app](https://traffitwin-ai.web.app) (Hosted on Firebase Hosting)
+*   **Backend API Services:** [https://sahilmangla-traffitwin-backend.hf.space](https://sahilmangla-traffitwin-backend.hf.space) (Hosted on Hugging Face Spaces via Docker)
+*   **Interactive API Docs:** [https://sahilmangla-traffitwin-backend.hf.space/docs](https://sahilmangla-traffitwin-backend.hf.space/docs) (Swagger/OpenAPI documentation)
 
-### Resilient AI Design
-To ensure continuous operation in production mission-control centers, the ADK agent implements a **hybrid intelligence architecture**. If the Gemini API experiences network latency, rate limits, or credentials failure, the agent automatically falls back to an internal, deterministic rule-based reasoning engine. This ensures operators receive immediate, accurate system metrics and status summaries without interruption.
+---
+
+## Future Work
+
+*   **GRIN Reconstruction Model:** Transitioning from tree-based regression to Graph Recurrent Imputation Networks to model complex temporal dynamics.
+*   **CityFlow V2 Integration:** Supporting dynamic traffic micro-simulations to study the downstream impacts of self-healing sensors on traffic light timing optimization.
+*   **Multi-Feature Reconstruction:** Expanding prediction parameters to include precipitation, lane construction data, and public holiday temporal profiles.
+*   **Online Learning:** Developing continuous training loops to update the baseline regressor as new telemetry drift is observed.
+*   **Vertex AI Deployment:** Migrating backend training and model endpoints to Vertex AI for enterprise-scale orchestration and monitoring.
 
 ---
 
@@ -257,8 +304,6 @@ adk run agents/traffic_resilience_agent
 ---
 
 ## Research Foundations
-
-This project draws inspiration from state-of-the-art spatial-temporal traffic prediction and reconstruction networks:
 
 1.  **DCRNN:** Li et al., *Diffusion Convolutional Recurrent Neural Network: Data-Driven Traffic Forecasting*, ICLR 2018.
 2.  **Graph WaveNet:** Wu et al., *Graph WaveNet for Deep Spatial-Temporal Graph Modeling*, IJCAI 2019.
