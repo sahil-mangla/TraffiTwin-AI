@@ -10,8 +10,9 @@ datasets/processed/
 
 # Large datasets and models
 METR-LA archive/
-backend/models/checkpoints/
+backend/models/checkpoints/*
 *.pkl
+!backend/models/checkpoints/lightgbm_baseline.pkl
 *.h5
 
 # Node.js
