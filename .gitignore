@@ -5,7 +5,7 @@ __pycache__/
 .env
 venv/
 .venv/
-datasets/raw/
+datasets/raw/*
 datasets/processed/
 
 # Large datasets and models
@@ -14,6 +14,8 @@ backend/models/checkpoints/*
 *.pkl
 !backend/models/checkpoints/lightgbm_baseline.pkl
 *.h5
+!datasets/raw/metr-la.h5
+!datasets/raw/adj_mx.pkl
 
 # Node.js
 node_modules/

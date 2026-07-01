@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application backend and ADK agent source code
 COPY backend/ ./backend/
 COPY agents/ ./agents/
+COPY datasets/ ./datasets/
 
 # Hugging Face Spaces exposes port 7860 by default
 EXPOSE 7860
