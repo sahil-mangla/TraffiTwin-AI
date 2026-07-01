@@ -1,3 +1,13 @@
+---
+title: TraffiTwin Backend
+emoji: 🚦
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # TraffiTwin AI
 
 > **Self-Healing Traffic Digital Twin for Resilient Smart City Operations**
