@@ -17,6 +17,22 @@ from backend.services.incident_intelligence_service import IncidentIntelligenceS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# CORS – build allowed origins from environment variable ALLOWED_ORIGINS.
+# Falls back to a safe default set that covers local dev.
+# Example:
+#   ALLOWED_ORIGINS=http://localhost:5173,https://traffitwin-ai.web.app
+# ---------------------------------------------------------------------------
+_DEFAULT_ORIGINS = ",".join([
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+])
+_raw_origins = os.getenv("ALLOWED_ORIGINS", _DEFAULT_ORIGINS)
+ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
+
 logger.info("Starting TraffiTwin AI Backend...")
 twin_service = TwinService()
 incident_service = IncidentIntelligenceService()
@@ -49,13 +65,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS
+# CORS – explicit origins only; credentials not needed (no cookies/auth).
+# NOTE: allow_credentials=False is intentional — combining credentials=True
+# with a wildcard origin is forbidden by the CORS spec and would be rejected
+# by all modern browsers anyway.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept", "Origin"],
 )
 
 app.include_router(router)
+
