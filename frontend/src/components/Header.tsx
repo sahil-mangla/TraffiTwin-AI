@@ -50,7 +50,6 @@ export function Header() {
   const activeFailed = snapshot ? Object.values(snapshot.masks).filter(Boolean).length : 0;
   const activeRecon = snapshot ? Object.keys(snapshot.reconstructions).length : 0;
   const rmse = metrics?.rmse ?? 0;
-  const fcr = metrics?.fcr ?? 0;
 
   return (
     <header
@@ -99,11 +98,6 @@ export function Header() {
           value={activeRecon}
           color={activeRecon > 0 ? '#8B5CF6' : '#8BA0BA'}
           dot
-        />
-        <StatPill
-          label="RECON ACC"
-          value={metrics ? `${fcr.toFixed(1)}%` : '—'}
-          color={metrics ? (fcr >= 95 ? '#10B981' : fcr >= 80 ? '#F59E0B' : '#EF4444') : '#8BA0BA'}
         />
         <StatPill
           label="RMSE"

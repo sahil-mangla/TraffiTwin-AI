@@ -33,11 +33,13 @@ export function BackendOfflineOverlay() {
           Attempting to reconnect{dots}
         </p>
         <div className="text-xs font-mono text-[#2A3545]">
-          Ensure the FastAPI backend is running on localhost:8000
+          Target: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}
         </div>
-        <div className="mt-3 text-[11px] font-mono text-[#2A3545]">
-          uvicorn backend.api.app:app --port 8000
-        </div>
+        {!import.meta.env.VITE_API_BASE_URL && (
+          <div className="mt-3 text-[11px] font-mono text-[#2A3545]">
+            uvicorn backend.api.app:app --port 8000
+          </div>
+        )}
       </div>
     </motion.div>
   );
