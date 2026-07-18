@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from typing import Tuple
 from backend.data.loader import METRLADataLoader
+from backend.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -10,8 +11,8 @@ class StreamSimulator:
     """
     Simulates a real-time data stream by iterating through the METR-LA dataset.
     """
-    def __init__(self, data_dir: str = "datasets/raw"):
-        self.data_dir = data_dir
+    def __init__(self, data_dir: str = None):
+        self.data_dir = data_dir or settings.data_dir
         self.loader = METRLADataLoader(data_dir=self.data_dir)
         self.X: np.ndarray = None
         self.A: np.ndarray = None

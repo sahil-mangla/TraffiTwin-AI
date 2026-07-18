@@ -8,6 +8,7 @@ from backend.api.schemas import (
     IncidentSummaryResponse, GenerateSummaryRequest, GenerateSummaryResponse
 )
 from backend.services.twin_service import TwinService
+from backend.core.exceptions import ServiceUnavailableError, InvalidSimulationStepError
 from datetime import datetime, timezone
 from typing import Any, List
 
@@ -16,13 +17,13 @@ router = APIRouter()
 def get_twin_service() -> TwinService:
     from backend.api.app import app
     if not hasattr(app.state, "twin_service"):
-        raise HTTPException(status_code=503, detail="Twin Service not initialized")
+        raise ServiceUnavailableError("Twin Service")
     return app.state.twin_service
 
 def get_incident_service() -> Any:
     from backend.api.app import app
     if not hasattr(app.state, "incident_service"):
-        raise HTTPException(status_code=503, detail="Incident Service not initialized")
+        raise ServiceUnavailableError("Incident Service")
     return app.state.incident_service
 
 def calculate_observability(snapshot: dict, num_nodes: int) -> float:
@@ -95,15 +96,12 @@ async def simulate_failure(
     twin: TwinService = Depends(get_twin_service),
     incident: Any = Depends(get_incident_service)
 ):
-    try:
-        twin.inject_failure(sensor_id=req.sensor_id, duration=req.duration)
-        incident.clear_latest_summary()
-        return SimulateFailureResponse(
-            status="success",
-            message=f"Injected failure on sensor {req.sensor_id} for {req.duration} steps."
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    twin.inject_failure(sensor_id=req.sensor_id, duration=req.duration)
+    incident.clear_latest_summary()
+    return SimulateFailureResponse(
+        status="success",
+        message=f"Injected failure on sensor {req.sensor_id} for {req.duration} steps."
+    )
 
 
 @router.post("/step", response_model=StepResponse)
@@ -112,6 +110,8 @@ async def step_simulation(
     twin: TwinService = Depends(get_twin_service),
     incident: Any = Depends(get_incident_service)
 ):
+    if req.steps <= 0:
+        raise InvalidSimulationStepError("Steps must be greater than 0")
     twin.step(steps=req.steps)
     incident.clear_latest_summary()
 

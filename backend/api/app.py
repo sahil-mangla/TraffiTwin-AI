@@ -10,9 +10,13 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from backend.core.exceptions import TraffiTwinException
 from backend.api.routes import router
 from backend.services.twin_service import TwinService
 from backend.services.incident_intelligence_service import IncidentIntelligenceService
+from backend.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,17 +24,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # CORS – build allowed origins from environment variable ALLOWED_ORIGINS.
 # Falls back to a safe default set that covers local dev.
-# Example:
-#   ALLOWED_ORIGINS=http://localhost:5173,https://traffitwin-ai.web.app
 # ---------------------------------------------------------------------------
-_DEFAULT_ORIGINS = ",".join([
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-])
-_raw_origins = os.getenv("ALLOWED_ORIGINS", _DEFAULT_ORIGINS)
-ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+ALLOWED_ORIGINS = settings.allowed_origins
 logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
 
 logger.info("Starting TraffiTwin AI Backend...")
@@ -64,6 +59,13 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+@app.exception_handler(TraffiTwinException)
+async def traffitwin_exception_handler(request: Request, exc: TraffiTwinException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.message, "error_code": exc.__class__.__name__}
+    )
 
 # CORS – explicit origins only; credentials not needed (no cookies/auth).
 # NOTE: allow_credentials=False is intentional — combining credentials=True

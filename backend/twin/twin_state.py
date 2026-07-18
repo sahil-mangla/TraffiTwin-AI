@@ -3,6 +3,8 @@ from typing import Dict, Optional
 import pandas as pd
 import logging
 
+from backend.core.exceptions import SensorNotFoundError, InvalidSimulationStepError
+
 logger = logging.getLogger(__name__)
 
 class TwinState:
@@ -62,7 +64,9 @@ class TwinState:
         Inject a failure for a given sensor ID and duration (in steps).
         """
         if sensor_id < 0 or sensor_id >= self.num_nodes:
-            raise ValueError(f"Invalid sensor_id: {sensor_id}")
+            raise SensorNotFoundError(sensor_id)
+        if duration <= 0:
+            raise InvalidSimulationStepError("Failure duration must be greater than 0")
         
         self.masks[sensor_id] = True
         self.failure_timers[sensor_id] = duration

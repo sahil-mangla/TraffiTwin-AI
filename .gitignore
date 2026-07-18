@@ -23,3 +23,12 @@ dist/
 *.log
 .codebase-memory/
 DEPLOYMENT_GUIDE.md
+
+# Pytest, coverage, and local temp files
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+tmp/
+.agents/
+skills-lock.json

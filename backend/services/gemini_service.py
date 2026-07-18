@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 from google import genai
 from google.genai.errors import APIError
+from backend.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ class GeminiService:
     Asynchronous Gemini API service using google-genai SDK.
     """
     def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash", timeout: float = 5.0):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.api_key = api_key or settings.gemini_api_key
         self.model = model
         self.timeout = timeout
         self.client = None

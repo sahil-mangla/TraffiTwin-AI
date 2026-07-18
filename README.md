@@ -68,6 +68,8 @@ TraffiTwin AI bridges this gap, serving as an algorithmic backup layer that esti
 *   **2.48 mph Mean Absolute Error (MAE):** State reconstruction accuracy restoring traffic speeds close to ground-truth values.
 *   **Google ADK Operations Analyst:** Conversational AI reasoning directly over live digital twin telemetry.
 *   **Deterministic Fallback Engine:** Rule-based fallback mechanism guaranteeing uptime during LLM API throttling or network interruptions.
+*   **Comprehensive Testing Suite:** Fully automated unit and integration tests (69 test cases) verifying simulation states, metrics calculations, domain logic, and API endpoints.
+*   **Automated CI/CD Pipeline:** Fully configured GitHub Actions workflow that executes linting, unit tests, and handles automatic CD to Hugging Face Spaces (backend) and Firebase Hosting (frontend).
 *   **Firebase + Hugging Face Deployment:** Decoupled architecture serving assets globally with sub-second API roundtrips.
 
 ---
@@ -290,6 +292,13 @@ The Google ADK-powered Traffic Operations Analyst is automatically available ins
 ```bash
 adk run agents/traffic_resilience_agent
 ```
+
+### 4. Run the Test Suite
+Ensure you are in the root directory and your virtual environment is active, then run:
+```bash
+pytest tests/ -v
+```
+This runs the full suite of unit and integration tests covering the simulator, metrics calculations, domain logic, custom exception handlers, and endpoints.
 
 ---
 
