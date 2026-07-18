@@ -202,7 +202,7 @@ class METRLADataLoader:
         suffix = self.speed_path.suffix.lower()
 
         if suffix in (".h5", ".hdf5"):
-            df: pd.DataFrame = pd.read_hdf(self.speed_path)
+            df: pd.DataFrame = pd.read_hdf(str(self.speed_path))
             # DataFrame: index=timestamps, columns=sensor_ids, values=speed (mph)
             timestamps = pd.DatetimeIndex(df.index)
             sensor_ids = [str(c) for c in df.columns]
