@@ -11,11 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Pull Git LFS objects (model weights)
+      run: git lfs pull
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-name: '3.11'
+        python-version: '3.11'
         cache: 'pip'
 
     - name: Install Python dependencies
@@ -60,6 +65,10 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        lfs: true
+
+    - name: Pull Git LFS objects
+      run: git lfs pull
 
     # Backend Deployment to Hugging Face Spaces
     - name: Deploy Backend to Hugging Face Spaces
