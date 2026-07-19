@@ -20,6 +20,16 @@ os.environ["ALLOWED_ORIGINS"] = (
     "https://traffitwin-ai.firebaseapp.com"
 )
 
+# backend.config builds its `settings` singleton once, at first import, from
+# whatever os.environ/.env looked like at that moment. If another test module
+# (e.g. test_config.py) happens to import backend.config first — collection
+# order across the whole test session, not just this file — the env var set
+# above is set too late to affect it. Force a fresh Settings() read here so
+# this file's CORS origins are correct regardless of what else has already
+# been collected.
+import backend.config
+backend.config.settings = backend.config.Settings()
+
 from fastapi.testclient import TestClient
 from backend.api.app import app
 
