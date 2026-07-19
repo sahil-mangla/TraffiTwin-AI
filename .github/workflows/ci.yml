@@ -89,11 +89,12 @@ jobs:
 
     # Frontend Deployment to Firebase Hosting
     - name: Deploy Frontend to Firebase Hosting
-      if: secrets.FIREBASE_SERVICE_ACCOUNT != ''
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
-        repoToken: '${{ secrets.GITHUB_TOKEN }}'
-        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+        repoToken: ${{ secrets.GITHUB_TOKEN }}
+        firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         projectId: traffitwin-ai
         channelId: live
         entryPoint: frontend
+      env:
+        FIREBASE_CLI_PREV: 1
