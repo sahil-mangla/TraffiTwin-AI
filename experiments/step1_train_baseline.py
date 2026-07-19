@@ -1,5 +1,5 @@
 """
-train_lightgbm.py — LightGBM Baseline Training Experiment
+step1_train_baseline.py — LightGBM Baseline Training Experiment
 =========================================================
 End-to-end pipeline to train and evaluate the LightGBM reconstruction model
 on the METR-LA dataset under block-missing sensor failures.

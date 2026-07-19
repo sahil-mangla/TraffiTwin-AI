@@ -1,5 +1,5 @@
 """
-run_experiments.py — TraffiTwin AI Benchmarking Framework
+step2_run_benchmark_suite.py — TraffiTwin AI Benchmarking Framework
 =========================================================
 Runs comprehensive evaluation sweeps across increasing failure rates.
 """
@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.data.loader import METRLADataLoader
 from backend.evaluation.experiment_runner import ExperimentRunner
 from backend.evaluation.config import config
-from experiments.visualize_results import generate_plots
+from experiments.step3_visualize_results import generate_plots
 
 warnings.filterwarnings("ignore")
 
