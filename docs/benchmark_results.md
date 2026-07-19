@@ -67,6 +67,9 @@ Below is the summary of results aggregated over 5 repetitions across all failure
 | **Spatial LightGBM** | 0.51 | 0.50 | 0.50 | 0.49 | 0.49 |
 | **Spatio-Temporal LightGBM** | **0.786** | **0.787** | **0.785** | **0.785** | **0.783** |
 
+> [!NOTE]
+> RFS in this table comes from a separate one-off run (`experiments/step1_train_baseline.py`), not the 5-run sweep in `experiments/step2_run_benchmark_suite.py`. The sweep's `experiment_runner.py` currently calls `Evaluator.calculate_metrics` without a `y_historical_mean` argument for the LightGBM rows, so `RFS_mean` is `NaN` in `results/summary.csv` for every failure rate — RFS is not yet computed per-rate across repetitions. Wiring that in (passing the Historical-Mean baseline's predictions on the same test cells into the LightGBM metrics call) would let this table be regenerated directly from the sweep like §3.1–3.3 and §3.5 are.
+
 ### 3.5 Failure Coverage Rate (FCR)
 *Measures network observability (percentage of missing nodes successfully reconstructed).*
 | Model | 5% Outage | 10% Outage | 20% Outage | 30% Outage | 40% Outage |
@@ -74,7 +77,9 @@ Below is the summary of results aggregated over 5 repetitions across all failure
 | **Historical Mean** | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
 | **LOCF** | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
 | **Spatial LightGBM** | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
-| **Spatio-Temporal LightGBM** | **97.03%** | **97.03%** | **97.03%** | **97.03%** | **97.03%** |
+| **Spatio-Temporal LightGBM** | **97.20%** | **97.13%** | **97.06%** | **97.09%** | **97.08%** |
+
+*(Source: `experiments/results/summary.csv`, `FCR_mean` column, regenerated 2026-07-19 after the fix described in §6.)*
 
 ---
 
@@ -106,7 +111,8 @@ An extensive audit of the Failure Coverage Rate (FCR) was completed:
 *   **Original FCR Issue**: In early versions, FCR incorrectly used `len(y_test)` as the denominator. Because `y_test` is the post-filtered feature set, this led to a misleading FCR of exactly 100%, masking coverage limitations.
 *   **Denominator Correction**: The denominator has been corrected to use the true total count of failed $(t, n)$ cells across the test mask.
 *   **Unavoidable 2.97% Coverage Gap**: Due to the 24-timestep warmup requirement of `lag24` (necessary for temporal features), the first 24 timesteps are excluded from reconstruction eligibility.
-*   **Final FCR**: After accounting for this warmup exclusion, Spatio-Temporal LightGBM achieves a final stable FCR of **97.03%**.
+*   **Final FCR**: After accounting for this warmup exclusion, Spatio-Temporal LightGBM achieves a stable FCR in the **~97.1–97.2%** band across failure rates 5–30%.
+*   **Second issue found (2026-07-19)**: at `failure_rate=40%`, FCR was observed to collapse to ~74.8% while MAE/RMSE/MAPE stayed flat — a pipeline artifact, not a model limitation. `SpatialFeatureEngineer.transform`'s `MAX_FEATURE_ROWS=50,000` safety cap was silently subsampling the **test** split whenever the eligible failed-cell count exceeded it (only triggered at the 40% rate for this 14-day/207-sensor configuration), while FCR's denominator used the true uncapped mask count. Fixed by adding an `enforce_cap` parameter so `experiment_runner.py` can request the full, uncapped test set (`enforce_cap=False`) while keeping the cap for train/val extraction speed. Post-fix, FCR at 40% is **97.08%**, consistent with the other rates. Full root-cause writeup: `docs/archive/FCR_AUDIT_REPORT.md` (§7 Addendum).
 
 ---
 

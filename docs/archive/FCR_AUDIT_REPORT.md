@@ -1,4 +1,18 @@
 
+> [!IMPORTANT]
+> **STATUS: RESOLVED (2026-07-19).** The denominator bug described below is
+> fixed in `backend/evaluation/experiment_runner.py` (the LightGBM call now
+> passes `total_test_failures = int((test_fail.mask_matrix == 0).sum())`
+> instead of `len(y_test)`). This document is retained for historical audit
+> trail only — **do not re-apply this fix, it is already in place.**
+>
+> A second, previously-undiscovered issue was found while re-verifying this
+> report: this doc's own §6 "Expected FCR After Fix" table (flat ~97% for
+> every failure rate) turned out to be incomplete — it never accounted for
+> the `MAX_FEATURE_ROWS` feature-cap interaction described in the addendum
+> at the bottom of this file. See the addendum for what that gap was and how
+> it was fixed.
+
 # FCR Audit Report — TraffiTwin AI
 
 **Prepared by:** Resilience Audit  
@@ -188,3 +202,46 @@ The ~3% gap is the unavoidable coverage loss from the `start_t=24` lag guard. Al
 
 > [!NOTE]
 > The fix achieves **FCR > 95%** across all failure rates, meeting the stated target. The structural 2.97% gap from `start_t=24` is expected, documented, and reflects the true operational coverage of the system.
+
+---
+
+## 7. Addendum (2026-07-19): The Table Above Was Still Wrong at `failure_rate=0.4`
+
+After the Bug 1 fix landed, `experiments/results/summary.csv` continued to show
+FCR ≈ **74.6–75.2%** at `failure_rate=0.4` — not the ~97% this report's §6 table
+predicted for every rate. MAE/RMSE/MAPE at 0.4 were essentially unchanged from
+0.3, so prediction *quality* was fine; only reported *coverage* had collapsed.
+
+**Root cause:** `backend/models/feature_engineering.py::SpatialFeatureEngineer.transform`
+has a second, independent row cap:
+
+```python
+if len(failed_t) > config.MAX_FEATURE_ROWS:   # config.MAX_FEATURE_ROWS = 50,000
+    ...
+    idx = rng.choice(total_rows, config.MAX_FEATURE_ROWS, replace=False)
+    failed_t, failed_n = failed_t[idx], failed_n[idx]
+```
+
+This check ran **unconditionally**, before ever looking at the caller's
+`max_samples` argument. `experiment_runner.py` was already calling
+`engineer.transform(..., max_samples=None)` for the test split specifically to
+request the full, uncapped set — but `MAX_FEATURE_ROWS` silently overrode that
+intent whenever the eligible row count exceeded 50,000, which only happens at
+the 14-day/207-sensor benchmark configuration's highest failure rate (0.4):
+eligible rows ≈ (807−24) × 207 × 0.4 ≈ 64,832, comfortably over the cap, while
+0.3 sits at ≈ 48,624 — under it. Since FCR's denominator is the *raw,
+uncapped* mask count while the numerator was capped at 50,000 predictions,
+FCR ≈ 50,000 / 66,819 ≈ 74.8% — matching the observed regression.
+
+This was a pipeline evaluation artifact, not a model capability limit.
+
+**Fix:** `SpatialFeatureEngineer.fit_transform`/`transform` gained an
+`enforce_cap: bool = True` parameter. `experiment_runner.py` now calls the
+test-split transform with `enforce_cap=False`, so `MAX_FEATURE_ROWS` still
+protects train/val extraction time (its original purpose) but never corrupts
+the test-time coverage metric. Train/val calls keep the default
+`enforce_cap=True`.
+
+This addendum exists specifically so nobody re-reads this report's §6 table,
+sees the mismatch at 0.4, and assumes Bug 1 has regressed — it hasn't; this
+was always a separate, second issue.

@@ -64,7 +64,7 @@ The codebase is split into distinct functional modules, each mapped to a specifi
 *   **Interface**: Consumes engineered tabular features to predict the speed at failed nodes.
 
 ### 2.5 Evaluation Engine
-*   **Code Location**: [evaluator.py](file:///Users/sahilmangla/TraffiTwin-AI/backend/models/evaluator.py), [benchmark_metrics.py](file:///Users/sahilmangla/TraffiTwin-AI/backend/evaluation/benchmark_metrics.py)
+*   **Code Location**: [evaluator.py](file:///Users/sahilmangla/TraffiTwin-AI/backend/models/evaluator.py)
 *   **Responsibility**:
     *   Calculates standard regression accuracy metrics: Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), and Mean Absolute Percentage Error (MAPE).
     *   Calculates domain-specific resilience metrics: **Recovery Fidelity Score (RFS)** measuring performance improvement over naive historical baselines, and **Failure Coverage Rate (FCR)** measuring model output completeness.
