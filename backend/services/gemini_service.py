@@ -13,7 +13,13 @@ class GeminiService:
     Asynchronous Gemini API service using google-genai SDK.
     """
     def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash", timeout: float = 5.0):
-        self.api_key = api_key or settings.gemini_api_key
+        self.api_key: Optional[str]
+        if api_key is not None:
+            self.api_key = api_key
+        elif settings.gemini_api_key is not None:
+            self.api_key = settings.gemini_api_key.get_secret_value()
+        else:
+            self.api_key = None
         self.model = model
         self.timeout = timeout
         self.client = None
