@@ -1,0 +1,18 @@
+# TraffiTwin AI — Development & CI Tooling (source of truth)
+# ======================================================================
+# This is the file to EDIT. Do not hand-edit requirements-dev.txt — it is
+# generated. After changing this file, regenerate the pinned lockfile with:
+#
+#   pip-compile requirements-dev.in -o requirements-dev.txt
+#
+# Installs on top of requirements.txt (production deps) — CI installs both;
+# the Dockerfile installs only requirements.txt.
+
+-c requirements.txt
+
+pytest>=7.4.0
+pytest-cov>=4.1.0
+flake8>=7.0.0
+mypy>=1.8.0
+pip-audit>=2.7.0
+pip-tools>=7.4.0

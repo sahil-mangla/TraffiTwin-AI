@@ -1,0 +1,45 @@
+# TraffiTwin AI — Production Runtime Dependencies (source of truth)
+# ======================================================================
+# This is the file to EDIT. Do not hand-edit requirements.txt — it is
+# generated. After changing this file, regenerate the pinned lockfile with:
+#
+#   pip-compile requirements.in -o requirements.txt
+#
+# To upgrade a package to the latest version allowed by these constraints:
+#
+#   pip-compile --upgrade-package <name> requirements.in -o requirements.txt
+#
+# See requirements-dev.in for development/CI-only tooling (test, lint, etc).
+
+# Core scientific stack
+numpy>=1.24.0
+pandas>=2.0.0,<3.0.0
+
+# Deep learning (PyTorch — CPU default; swap index URL for CUDA)
+# CPU:  pip install torch --index-url https://download.pytorch.org/whl/cpu
+# CUDA: pip install torch --index-url https://download.pytorch.org/whl/cu121
+torch>=2.1.0
+
+# ML baseline
+lightgbm>=4.0.0
+
+# API server (future backend service)
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+
+# Data serialisation
+tables>=3.9.0       # PyTables — required for pd.read_hdf()
+h5py>=3.10.0
+
+# Utilities
+scikit-learn>=1.3.0
+tqdm>=4.66.0
+matplotlib>=3.7.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+pydantic-settings>=2.0.0
+
+# Agents
+google-adk>=2.3.0
+httpx>=0.27.0
+google-genai>=0.3.0
