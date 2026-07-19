@@ -35,31 +35,33 @@ class SpatialFeatureEngineer:
         self._printed_summary = False
 
     def fit_transform(
-        self, 
-        X: np.ndarray, 
-        mask: np.ndarray, 
-        A: np.ndarray, 
+        self,
+        X: np.ndarray,
+        mask: np.ndarray,
+        A: np.ndarray,
         timestamps: pd.DatetimeIndex,
-        max_samples: int = None
+        max_samples: int = None,
+        enforce_cap: bool = True
     ) -> Tuple[pd.DataFrame, np.ndarray]:
         """
         Fit the engineer (optional, for statefulness if needed) and transform data.
-        
+
         Returns
         -------
         X_features : pd.DataFrame
         y_target : np.ndarray
         """
         self._fitted = True
-        return self.transform(X, mask, A, timestamps, max_samples)
+        return self.transform(X, mask, A, timestamps, max_samples, enforce_cap)
 
     def transform(
-        self, 
-        X: np.ndarray, 
-        mask: np.ndarray, 
-        A: np.ndarray, 
+        self,
+        X: np.ndarray,
+        mask: np.ndarray,
+        A: np.ndarray,
         timestamps: pd.DatetimeIndex,
-        max_samples: int = None
+        max_samples: int = None,
+        enforce_cap: bool = True
     ) -> Tuple[pd.DataFrame, np.ndarray]:
         """
         Transform the tensor into a tabular dataset.
@@ -112,13 +114,17 @@ class SpatialFeatureEngineer:
         failed_t, failed_n = np.where(mask[start_t:] == 0)
         failed_t += start_t  # Adjust back to absolute time indices
         
-        if len(failed_t) > config.MAX_FEATURE_ROWS:
+        if enforce_cap and len(failed_t) > config.MAX_FEATURE_ROWS:
             total_rows = len(failed_t)
             rng = np.random.default_rng(config.RANDOM_SEED)
             idx = rng.choice(total_rows, config.MAX_FEATURE_ROWS, replace=False)
             failed_t = failed_t[idx]
             failed_n = failed_n[idx]
-            logger.info(f"Feature cap reached. Sampled {config.MAX_FEATURE_ROWS} rows from {total_rows} total rows.")
+            dropped_frac = 1.0 - (config.MAX_FEATURE_ROWS / total_rows)
+            logger.warning(
+                f"Feature cap reached. Sampled {config.MAX_FEATURE_ROWS} rows from "
+                f"{total_rows} total rows ({dropped_frac:.1%} dropped)."
+            )
         elif max_samples is not None and len(failed_t) > max_samples:
             rng = np.random.default_rng(config.RANDOM_SEED)
             idx = rng.choice(len(failed_t), max_samples, replace=False)

@@ -11,7 +11,7 @@ from backend.evaluation.config import config
 from backend.data.preprocessing import TimeSeriesSplitter
 from backend.data.failure_simulator import FailureSimulator
 from backend.evaluation.baseline_models import HistoricalMeanBaseline, LOCFBaseline
-from backend.evaluation.benchmark_metrics import calculate_all_metrics
+from backend.models.evaluator import Evaluator
 from backend.models.feature_engineering import SpatialFeatureEngineer
 from backend.models.lightgbm_reconstructor import LightGBMReconstructor
 
@@ -60,7 +60,7 @@ class ExperimentRunner:
                 else:
                     y_true_test = test_split.X[failed_t, failed_n]
                     
-                metrics_hm = calculate_all_metrics(y_true_test, y_pred_hm, total_failures=len(failed_t))
+                metrics_hm = Evaluator.calculate_metrics(y_true_test, y_pred_hm, total_failures=len(failed_t))
                 self.add_result("Historical Mean", rate, run + 1, metrics_hm)
                 print("Model             : Historical Mean")
                 
@@ -69,7 +69,7 @@ class ExperimentRunner:
                 locf_model.fit(train_split.X)
                 y_pred_locf = locf_model.predict(test_split.X, test_fail.mask_matrix, failed_t, failed_n)
                 
-                metrics_locf = calculate_all_metrics(y_true_test, y_pred_locf, total_failures=len(failed_t))
+                metrics_locf = Evaluator.calculate_metrics(y_true_test, y_pred_locf, total_failures=len(failed_t))
                 self.add_result("LOCF", rate, run + 1, metrics_locf)
                 print("Model             : LOCF")
                 
@@ -84,8 +84,12 @@ class ExperimentRunner:
                     val_split.X, val_fail.mask_matrix, A, t_val, max_samples=None
                 )
                 
+                # enforce_cap=False: the test split must never be subsampled — FCR's
+                # denominator is the raw mask count, so capping the test set silently
+                # corrupts the coverage metric instead of just bounding train-time cost.
                 X_test_df, y_test = engineer.transform(
-                    test_split.X, test_fail.mask_matrix, A, t_test, max_samples=None
+                    test_split.X, test_fail.mask_matrix, A, t_test,
+                    max_samples=None, enforce_cap=False
                 )
                 
                 print("Model             : LightGBM")
@@ -102,7 +106,7 @@ class ExperimentRunner:
                 # ~2.97% of events unconditionally. Passing len(y_test) makes FCR
                 # measure len(y_pred)/len(y_test) ≈ 100% regardless of true coverage.
                 total_test_failures = int((test_fail.mask_matrix == 0).sum())
-                metrics_lgb = calculate_all_metrics(y_test, y_pred_lgb, total_failures=total_test_failures)
+                metrics_lgb = Evaluator.calculate_metrics(y_test, y_pred_lgb, total_failures=total_test_failures)
                 
                 # If LightGBM recorded a best_iteration_, track it
                 if hasattr(lgb_model, 'best_iteration_') and lgb_model.best_iteration_ is not None:
