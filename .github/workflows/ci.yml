@@ -89,6 +89,7 @@ jobs:
 
     # Frontend Deployment to Firebase Hosting
     - name: Deploy Frontend to Firebase Hosting
+      if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
         repoToken: '${{ secrets.GITHUB_TOKEN }}'
