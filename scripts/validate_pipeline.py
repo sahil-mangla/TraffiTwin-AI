@@ -1,5 +1,5 @@
 """
-test_pipeline.py — End-to-End Data Pipeline Validation
+validate_pipeline.py — End-to-End Data Pipeline Validation
 ========================================================
 Standalone script that exercises the full METR-LA data pipeline:
 
@@ -15,12 +15,12 @@ Standalone script that exercises the full METR-LA data pipeline:
 
 Usage
 -----
-    python backend/test_pipeline.py --data_dir /path/to/metr-la/
+    python scripts/validate_pipeline.py --data_dir /path/to/metr-la/
 
 If the real METR-LA files are not available, pass --synthetic to run
 against a procedurally generated dataset of the correct shape.
 
-    python backend/test_pipeline.py --synthetic
+    python scripts/validate_pipeline.py --synthetic
 """
 
 import argparse
@@ -39,7 +39,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
     datefmt="%H:%M:%S",
 )
-logger = logging.getLogger("test_pipeline")
+logger = logging.getLogger("validate_pipeline")
 
 # ---------------------------------------------------------------------------
 # Local imports — allow running as `python backend/test_pipeline.py` from repo root
@@ -397,9 +397,9 @@ if __name__ == "__main__":
             print(
                 "\n[INFO] No --data_dir provided and dataset not found in datasets/raw/.\n"
                 "       To run with real data, use:\n"
-                "         python backend/test_pipeline.py --data_dir /path/to/metr-la/\n"
+                "         python scripts/validate_pipeline.py --data_dir /path/to/metr-la/\n"
                 "       To run with synthetic data, use:\n"
-                "         python backend/test_pipeline.py --synthetic\n"
+                "         python scripts/validate_pipeline.py --synthetic\n"
             )
             print("       Aborting. Please explicitly pass --synthetic if you want to use synthetic data.")
             sys.exit(1)
