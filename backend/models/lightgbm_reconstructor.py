@@ -104,7 +104,7 @@ class LightGBMReconstructor:
         y_pred : np.ndarray
             Predicted traffic speeds.
         """
-        return self.model.predict(X)
+        return np.asarray(self.model.predict(X))
 
     def evaluate(
         self, 
