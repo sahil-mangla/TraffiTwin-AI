@@ -7,9 +7,11 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.core.exceptions import TraffiTwinException
 from backend.api.routes import router
 from backend.services.twin_service import TwinService
@@ -64,6 +66,41 @@ async def traffitwin_exception_handler(request: Request, exc: TraffiTwinExceptio
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.message, "error_code": exc.__class__.__name__}
+    )
+
+# FastAPI's default 422 body (a raw list of pydantic error dicts, no
+# error_code) doesn't match the {"detail", "error_code"} shape every other
+# error response uses. Normalize it so API consumers can rely on one shape.
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        content={"detail": exc.errors(), "error_code": "RequestValidationError"}
+    )
+
+# Framework-level HTTP errors (e.g. 404 for an unknown route, 405 for a
+# disallowed method) — normalized to the same shape for consistency.
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "error_code": "HTTPException"}
+    )
+
+# Last-resort safety net: any exception not already handled above (a bug in
+# a service, an unexpected third-party error, etc.) previously surfaced as
+# FastAPI's bare, unstructured 500 with a traceback logged nowhere but
+# stdout. Log it server-side with full context and return the same
+# {"detail", "error_code"} shape as every other error path, without leaking
+# internals to the client.
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception(
+        "Unhandled exception while processing %s %s", request.method, request.url.path
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An unexpected error occurred.", "error_code": "InternalServerError"}
     )
 
 # CORS – explicit origins only; credentials not needed (no cookies/auth).
