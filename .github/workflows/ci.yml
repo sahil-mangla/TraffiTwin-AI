@@ -54,7 +54,7 @@ jobs:
 
     - name: Run tests with pytest
       run: |
-        pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term
+        pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term --cov-fail-under=85
 
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
@@ -79,6 +79,11 @@ jobs:
       run: |
         cd frontend
         npm run lint
+
+    - name: Run Frontend tests
+      run: |
+        cd frontend
+        npm run test
 
     - name: Scan Frontend dependencies for known vulnerabilities
       run: |
