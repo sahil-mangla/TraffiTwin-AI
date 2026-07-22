@@ -33,11 +33,21 @@ def calculate_observability(snapshot: dict, num_nodes: int) -> float:
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
+    """Liveness check. Always returns 200 once the process is up — does not
+    verify that the Twin/Incident services finished initializing."""
     return HealthResponse(status="ok", version="1.0.0")
 
 
-@router.get("/snapshot", response_model=TwinSnapshotResponse)
+@router.get(
+    "/snapshot",
+    response_model=TwinSnapshotResponse,
+    responses={503: {"description": "Twin Service not yet initialized."}},
+)
 async def get_snapshot(twin: TwinService = Depends(get_twin_service)):
+    """
+    Current readings, failure masks, and AI reconstructions for every sensor
+    at the present simulation timestep.
+    """
     snapshot = twin.get_snapshot()
     return TwinSnapshotResponse(**snapshot)
 
@@ -90,12 +100,20 @@ async def get_system_state(
     )
 
 
-@router.post("/simulate_failure", response_model=SimulateFailureResponse)
+@router.post(
+    "/simulate_failure",
+    response_model=SimulateFailureResponse,
+    responses={404: {"description": "sensor_id is out of range for this network."}},
+)
 async def simulate_failure(
     req: SimulateFailureRequest,
     twin: TwinService = Depends(get_twin_service),
     incident: Any = Depends(get_incident_service)
 ):
+    """
+    Inject a sensor outage for `duration` simulation steps. Clears any stale
+    cached incident summary so the next `/state` poll reflects this failure.
+    """
     twin.inject_failure(sensor_id=req.sensor_id, duration=req.duration)
     incident.clear_latest_summary()
     return SimulateFailureResponse(
@@ -104,12 +122,19 @@ async def simulate_failure(
     )
 
 
-@router.post("/step", response_model=StepResponse)
+@router.post(
+    "/step",
+    response_model=StepResponse,
+    responses={422: {"description": "steps must be greater than 0."}},
+)
 async def step_simulation(
     req: StepRequest,
     twin: TwinService = Depends(get_twin_service),
     incident: Any = Depends(get_incident_service)
 ):
+    """Advance the simulation by `steps` ticks, running reconstruction for
+    any sensors currently failed and healing any whose failure duration has
+    elapsed."""
     if req.steps <= 0:
         raise InvalidSimulationStepError("Steps must be greater than 0")
     twin.step(steps=req.steps)
@@ -123,6 +148,8 @@ async def step_simulation(
 
 @router.get("/metrics", response_model=MetricsResponse)
 async def get_metrics(twin: TwinService = Depends(get_twin_service)):
+    """Rolling reconstruction-accuracy metrics (FCR, MAE, RMSE) computed over
+    every reconstruction made so far in this simulation run."""
     metrics = twin.get_metrics()
     return MetricsResponse(
         current_time=twin.state.current_time_step,
@@ -132,6 +159,8 @@ async def get_metrics(twin: TwinService = Depends(get_twin_service)):
 
 @router.get("/incident-summaries", response_model=List[IncidentSummaryResponse])
 async def get_incident_summaries(incident: Any = Depends(get_incident_service)):
+    """The most recent cached incident summaries (deterministic or
+    AI-enriched), newest first, capped at 20 entries."""
     summaries = incident.get_latest_summaries()
     return [IncidentSummaryResponse(**s) for s in summaries]
 
@@ -141,6 +170,11 @@ async def generate_incident_summary(
     req: GenerateSummaryRequest,
     incident: Any = Depends(get_incident_service)
 ):
+    """
+    Generate a summary from a caller-supplied incident payload rather than
+    the live twin state — useful for replaying or backfilling a report for
+    an incident that already occurred.
+    """
     payload = req.model_dump()
     summary = await incident.generate_from_payload(payload)
     return GenerateSummaryResponse(summary=summary)
