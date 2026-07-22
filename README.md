@@ -68,8 +68,8 @@ TraffiTwin AI bridges this gap, serving as an algorithmic backup layer that esti
 *   **2.48 mph Mean Absolute Error (MAE):** State reconstruction accuracy restoring traffic speeds close to ground-truth values.
 *   **Google ADK Operations Analyst:** Conversational AI reasoning directly over live digital twin telemetry.
 *   **Deterministic Fallback Engine:** Rule-based fallback mechanism guaranteeing uptime during LLM API throttling or network interruptions.
-*   **Comprehensive Testing Suite:** Fully automated unit and integration tests (69 test cases) verifying simulation states, metrics calculations, domain logic, and API endpoints.
-*   **Automated CI/CD Pipeline:** Fully configured GitHub Actions workflow that executes linting, unit tests, and handles automatic CD to Hugging Face Spaces (backend) and Firebase Hosting (frontend).
+*   **Comprehensive Testing Suite:** 208 backend tests (92%+ coverage, enforced in CI), 51 frontend unit/component tests, and 3 end-to-end Playwright flows — covering simulation state, metrics, domain logic, API endpoints, error handling, and the full incident-detection-to-summary service chain.
+*   **Automated CI/CD Pipeline:** GitHub Actions workflow running Ruff, mypy (blocking), pytest with a coverage gate, frontend unit tests, Playwright E2E tests, and dependency vulnerability scans, then deploying automatically to Hugging Face Spaces (backend) and Firebase Hosting (frontend).
 *   **Firebase + Hugging Face Deployment:** Decoupled architecture serving assets globally with sub-second API roundtrips.
 
 ---
@@ -213,19 +213,27 @@ TraffiTwin-AI/
 │       ├── tools.py                 # API-backed data fetchers
 │       └── README.md                # Agent documentation
 ├── backend/
-│   ├── api/                         # FastAPI router & app configuration
+│   ├── api/                         # FastAPI router, app config, and exception handlers
 │   ├── services/                    # Core backend service singletons
-│   ├── twin/                        # Simulation state and LightGBM models
-│   ├── requirements.txt             # Python dependencies
-│   └── main.py                      # Backend entrypoint
+│   ├── twin/                        # Simulation state and stream simulator
+│   ├── models/                      # Feature engineering, LightGBM reconstructor, evaluator
+│   └── data/                        # METR-LA loader, preprocessing, failure simulator
+├── tests/                           # Backend pytest suite (unit, API, integration)
+├── scripts/                         # Standalone scripts (e.g. validate_pipeline.py)
 ├── frontend/
 │   ├── src/
 │   │   ├── components/              # React UI elements (Header, OperationsRail, BriefingModal)
 │   │   ├── store/                   # Zustand state managers
+│   │   ├── hooks/                   # Polling/autoplay hooks
+│   │   ├── test/                    # Vitest setup (motion/react mock, jest-dom)
 │   │   ├── App.tsx                  # Main layout container
 │   │   └── index.css                # Global styles & design system
+│   ├── e2e/                         # Playwright end-to-end specs
 │   ├── package.json                 # Frontend dependencies
 │   └── vite.config.ts               # Vite configuration
+├── requirements.txt / requirements-dev.txt   # Pinned lockfiles (pip-compile) — edit requirements*.in instead
+├── pyproject.toml                   # Ruff configuration
+├── CONTRIBUTING.md                  # Local setup + testing expectations for contributors
 └── README.md                        # Project documentation
 ```
 
@@ -247,14 +255,14 @@ cd TraffiTwin-AI
 ### Backend Setup
 1. Create a virtual environment and activate it:
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate
+   python3 -m venv .venv
+   source .venv/bin/activate
    ```
-2. Install python dependencies:
+2. Install python dependencies (pinned, pip-compile-generated lockfiles — see `requirements.in`/`requirements-dev.in` for the source of truth):
    ```bash
-   pip install -r backend/requirements.txt
+   pip install -r requirements.txt -r requirements-dev.txt
    ```
-3. Set environment variables in a `.env` file within the `backend/` directory:
+3. Set environment variables in a `.env` file at the **repository root** (loaded via `load_dotenv()` in `backend/api/app.py`, relative to wherever `uvicorn` is launched from):
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
    ```
@@ -293,12 +301,60 @@ The Google ADK-powered Traffic Operations Analyst is automatically available ins
 adk run agents/traffic_resilience_agent
 ```
 
-### 4. Run the Test Suite
-Ensure you are in the root directory and your virtual environment is active, then run:
+---
+
+## Testing
+
+TraffiTwin AI is tested at three levels — backend unit/integration tests, frontend unit/component tests, and end-to-end browser tests — all wired into CI (see `.github/workflows/ci.yml`).
+
+### Backend (pytest)
+
+From the repository root, with your virtual environment active:
+
 ```bash
+# Full suite
 pytest tests/ -v
+
+# With coverage (CI enforces --cov-fail-under=85; current coverage is ~92%)
+pytest tests/ -v --cov=backend --cov-report=term-missing --cov-fail-under=85
 ```
-This runs the full suite of unit and integration tests covering the simulator, metrics calculations, domain logic, custom exception handlers, and endpoints.
+
+The suite (208 tests) is organized by what it exercises:
+
+*   **Unit tests** — one file per service/module (`test_preprocessing.py`, `test_failure_simulator.py`, `test_loader.py`, `test_lightgbm_reconstructor.py`, `test_dataset.py`, `test_circuit_breaker.py`, `test_rate_limiter.py`, `test_rule_based_reporter.py`, `test_gemini_service.py`, `test_metrics_service.py`, `test_twin_service.py`, `test_reconstruction_service.py`, `test_incident_intelligence_service.py`, `test_config.py`, `test_stream_simulator.py`).
+*   **API tests** (`test_routes.py`, `test_error_handling.py`, `test_cors.py`) — every endpoint's success path plus its documented error responses (404/422/503/500), all normalized to a consistent `{"detail", "error_code"}` shape.
+*   **Integration tests** (`test_integration_flow.py`, `test_service_chain_integration.py`) — the former drives the full HTTP stack through `TestClient` with only the incident service faked; the latter wires the *real* `TwinService` → `ReconstructionService` → `IncidentIntelligenceService` chain together (only the outbound Gemini network call is stubbed), verifying failure injection actually triggers reconstruction, healing clears it, and the rate limiter/circuit breaker/deduplicator behave correctly under repeated real incidents.
+
+Static analysis, run the same way CI does:
+
+```bash
+mypy backend --ignore-missing-imports   # blocking — must be error-free
+ruff check . --select=F63,F7,F82        # blocking tier — correctness only
+ruff check . --exit-zero --statistics   # advisory tier — full style/complexity
+```
+
+### Frontend (Vitest + Testing Library)
+
+From `frontend/`:
+
+```bash
+npm test                 # run once
+npm run test:watch       # watch mode
+npm run test:coverage    # with coverage
+```
+
+51 tests cover the Zustand store (event/banner diffing logic), the `useSystemState`/`useAutoPlay` hooks (polling, autoplay loop, cleanup on unmount), and every interactive component (`ControlDock`, `BriefingModal`, `EventTimeline`, `IncidentDrawer`, `BackendOfflineOverlay`). `motion/react` is mocked in `src/test/setup.ts` so `AnimatePresence` exit animations — which never resolve under jsdom — don't leave stale elements in the DOM.
+
+### End-to-end (Playwright)
+
+From `frontend/`, with the backend's Python dependencies installed (Playwright boots a real `uvicorn` backend alongside the Vite dev server — see `playwright.config.ts`):
+
+```bash
+npx playwright install --with-deps chromium   # one-time browser install
+npm run test:e2e
+```
+
+Three specs drive the real app end-to-end in a real browser: injecting a sensor failure and confirming it reaches the event log, running the autoplay loop and pausing it, and rejecting invalid failure-injection input client-side.
 
 ---
 
@@ -318,6 +374,12 @@ This runs the full suite of unit and integration tests covering the simulator, m
 2.  **Graph WaveNet:** Wu et al., *Graph WaveNet for Deep Spatial-Temporal Graph Modeling*, IJCAI 2019.
 3.  **GRIN:** Cini et al., *Filling the Gaps: Multivariate Time Series Imputation by Graph Recurrent Networks*, ICLR 2022.
 4.  **LightGBM:** Ke et al., *LightGBM: A Highly Efficient Light Gradient Boosting Decision Tree*, NeurIPS 2017.
+
+---
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and the testing/quality bar (Ruff, mypy, pytest coverage, Vitest, Playwright) every PR is expected to meet.
 
 ---
 
