@@ -1,0 +1,20 @@
+[tool.ruff]
+line-length = 127
+target-version = "py311"
+exclude = [
+    ".venv",
+    "frontend",
+    "METR-LA archive",
+    "datasets",
+    "demo_assets",
+]
+
+[tool.ruff.lint]
+# Mirrors the two-tier flake8 setup this replaced: pyflakes correctness
+# checks (F) plus pycodestyle (E/W) and mccabe complexity (C90) are all
+# enabled here, but CI only *blocks* on a narrow subset (see ci.yml) and
+# runs the rest with --exit-zero as an advisory pass.
+select = ["E", "F", "W", "C90"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
