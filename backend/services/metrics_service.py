@@ -9,7 +9,7 @@ class MetricsService:
     def __init__(self, window_size: int = 1000):
         # Keep a rolling queue of (y_true, y_pred)
         self.window_size = window_size
-        self.history = collections.deque(maxlen=window_size)
+        self.history: collections.deque[Tuple[float, float]] = collections.deque(maxlen=window_size)
         self.total_failures_simulated = 0
         
     def add_reconstructions(self, y_true_dict: Dict[str, float], y_pred_dict: Dict[str, float]):

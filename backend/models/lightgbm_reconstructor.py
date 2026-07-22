@@ -29,7 +29,7 @@ class LightGBMReconstructor:
         Initialize the LightGBM model with default or custom hyperparameters.
         """
         # Default parameters from specification
-        self.params = {
+        self.params: Dict[str, Any] = {
             "n_estimators": 500,
             "learning_rate": 0.05,
             "num_leaves": 63,
@@ -39,8 +39,9 @@ class LightGBMReconstructor:
             "n_jobs": 1
         }
         self.params.update(kwargs)
-        
+
         self.model = lgb.LGBMRegressor(**self.params)
+        self.best_iteration_: Optional[int] = None
         logger.info(f"Initialized LightGBMReconstructor with params: {self.params}")
 
     def fit(
@@ -70,7 +71,7 @@ class LightGBMReconstructor:
         """
         logger.info(f"Training LightGBM on {len(X_train)} samples...")
         
-        callbacks = []
+        callbacks: list = []
         if eval_set is not None:
             callbacks.append(lgb.early_stopping(stopping_rounds=early_stopping_rounds))
             callbacks.append(lgb.log_evaluation(period=50))

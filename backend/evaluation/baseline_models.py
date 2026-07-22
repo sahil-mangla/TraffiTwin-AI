@@ -4,6 +4,8 @@ baseline_models.py — Naive Baseline Models for Traffic Reconstruction
 Implements the Historical Mean and Last Observation Carried Forward (LOCF) baselines.
 """
 
+from typing import Optional
+
 import numpy as np
 
 class HistoricalMeanBaseline:
@@ -16,7 +18,7 @@ class HistoricalMeanBaseline:
         self.node_means = None
         self.global_mean = 0.0
 
-    def fit(self, X_train: np.ndarray, mask_train: np.ndarray = None) -> "HistoricalMeanBaseline":
+    def fit(self, X_train: np.ndarray, mask_train: Optional[np.ndarray] = None) -> "HistoricalMeanBaseline":
         """
         Compute historical means.
         

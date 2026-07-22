@@ -6,12 +6,12 @@ from backend.models.feature_engineering import SpatialFeatureEngineer
 from backend.models.lightgbm_reconstructor import LightGBMReconstructor
 from backend.twin.twin_state import TwinState
 from backend.config import settings
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 class ReconstructionService:
-    def __init__(self, model_path: str = None):
+    def __init__(self, model_path: Optional[str] = None):
         self.model_path = model_path or settings.model_path
         self.model = None
         self.engineer = SpatialFeatureEngineer(max_neighbors=3)

@@ -18,7 +18,7 @@ class EventDeduplicator:
     """
     def __init__(self, ttl: float = 120.0):
         self.ttl = ttl
-        self.cache = {}  # key -> timestamp
+        self.cache: Dict[str, float] = {}  # key -> timestamp
 
     def is_duplicate(self, event_type: str, sensor_id: Optional[int]) -> bool:
         now = time.time()

@@ -6,19 +6,19 @@ standard regression metrics and domain-specific metrics like RFS and FCR.
 """
 
 import numpy as np
-from typing import Dict
+from typing import Dict, Optional
 
 class Evaluator:
     """
     Evaluator for traffic reconstruction models.
     """
-    
+
     @staticmethod
     def calculate_metrics(
-        y_true: np.ndarray, 
-        y_pred: np.ndarray, 
-        y_historical_mean: np.ndarray = None,
-        total_failures: int = None
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+        y_historical_mean: Optional[np.ndarray] = None,
+        total_failures: Optional[int] = None
     ) -> Dict[str, float]:
         """
         Calculate reconstruction metrics.

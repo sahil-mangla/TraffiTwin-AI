@@ -8,7 +8,7 @@ class RateLimiter:
     def __init__(self, max_requests: int = 10, window_seconds: int = 60):
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self.requests = deque()
+        self.requests: deque[float] = deque()
 
     def allow(self) -> bool:
         now = time.time()

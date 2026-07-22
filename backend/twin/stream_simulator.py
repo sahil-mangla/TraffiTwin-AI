@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import pandas as pd
-from typing import Tuple
+from typing import Optional, Tuple
 from backend.data.loader import METRLADataLoader
 from backend.config import settings
 
@@ -11,12 +11,12 @@ class StreamSimulator:
     """
     Simulates a real-time data stream by iterating through the METR-LA dataset.
     """
-    def __init__(self, data_dir: str = None):
+    def __init__(self, data_dir: Optional[str] = None):
         self.data_dir = data_dir or settings.data_dir
         self.loader = METRLADataLoader(data_dir=self.data_dir)
-        self.X: np.ndarray = None
-        self.A: np.ndarray = None
-        self.timestamps: pd.DatetimeIndex = None
+        self.X: Optional[np.ndarray] = None
+        self.A: Optional[np.ndarray] = None
+        self.timestamps: Optional[pd.DatetimeIndex] = None
         self.current_step: int = -1
         self.total_steps: int = 0
         
@@ -33,9 +33,9 @@ class StreamSimulator:
         Advances the stream by one time step.
         Returns the ground-truth readings and the timestamp.
         """
-        if self.X is None:
+        if self.X is None or self.timestamps is None:
             raise RuntimeError("Data not loaded. Call load_data() first.")
-            
+
         self.current_step += 1
         
         if self.current_step >= self.total_steps:

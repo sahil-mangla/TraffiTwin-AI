@@ -4,7 +4,7 @@ from backend.api.schemas import (
     SimulateFailureRequest, SimulateFailureResponse,
     StepRequest, StepResponse,
     TwinSnapshotResponse, MetricsResponse,
-    GraphResponse, SystemStateResponse,
+    GraphResponse, GraphNode, GraphEdge, SystemStateResponse,
     IncidentSummaryResponse, GenerateSummaryRequest, GenerateSummaryResponse
 )
 from backend.services.twin_service import TwinService
@@ -51,13 +51,13 @@ async def get_graph(twin: TwinService = Depends(get_twin_service)):
     """
     A = twin.stream.get_adjacency_matrix()
     n = A.shape[0]
-    nodes = [{"id": i} for i in range(n)]
+    nodes = [GraphNode(id=i) for i in range(n)]
     edges = []
     for i in range(n):
         for j in range(i + 1, n):
             w = float(A[i, j])
             if w > 0:
-                edges.append({"source": i, "target": j, "weight": round(w, 4)})
+                edges.append(GraphEdge(source=i, target=j, weight=round(w, 4)))
     return GraphResponse(nodes=nodes, edges=edges)
 
 

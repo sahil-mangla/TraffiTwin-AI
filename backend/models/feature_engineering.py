@@ -6,7 +6,7 @@ specifically for training LightGBM on sensor failure reconstruction.
 """
 
 import logging
-from typing import Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -40,7 +40,7 @@ class SpatialFeatureEngineer:
         mask: np.ndarray,
         A: np.ndarray,
         timestamps: pd.DatetimeIndex,
-        max_samples: int = None,
+        max_samples: Optional[int] = None,
         enforce_cap: bool = True
     ) -> Tuple[pd.DataFrame, np.ndarray]:
         """
@@ -60,7 +60,7 @@ class SpatialFeatureEngineer:
         mask: np.ndarray,
         A: np.ndarray,
         timestamps: pd.DatetimeIndex,
-        max_samples: int = None,
+        max_samples: Optional[int] = None,
         enforce_cap: bool = True
     ) -> Tuple[pd.DataFrame, np.ndarray]:
         """
@@ -152,7 +152,7 @@ class SpatialFeatureEngineer:
             
             # 2. Extract features
             # Graph Features (metadata)
-            feat_dict = {
+            feat_dict: Dict[str, Any] = {
                 'num_healthy_neighbors': len(healthy_neighbors),
                 'node_degree': len(neighbors),
             }

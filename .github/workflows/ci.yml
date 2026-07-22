@@ -39,12 +39,8 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Static type check with mypy
-      # Advisory for now: the codebase predates mypy and carries ~60 pre-
-      # existing type errors unrelated to any single change. Surfacing them
-      # without blocking every PR on a backlog no one change caused — same
-      # two-tier pattern as flake8's --exit-zero complexity pass above.
-      # Tighten to blocking once the backlog is paid down.
-      continue-on-error: true
+      # The pre-existing ~60-error backlog has been paid down to zero —
+      # blocking now so new type errors can't be introduced silently.
       run: |
         mypy backend --ignore-missing-imports
 

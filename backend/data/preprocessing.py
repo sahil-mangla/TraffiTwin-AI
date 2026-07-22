@@ -145,6 +145,7 @@ class ZScoreScaler:
             Normalised values.  NaNs in the input are preserved.
         """
         self._assert_fitted()
+        assert self.mean_ is not None and self.std_ is not None
         return ((X - self.mean_) / (self.std_ + self.eps)).astype(np.float32)
 
     def inverse_transform(self, X_norm: np.ndarray) -> np.ndarray:
@@ -163,6 +164,7 @@ class ZScoreScaler:
             Values in original units (e.g., mph for METR-LA).
         """
         self._assert_fitted()
+        assert self.mean_ is not None and self.std_ is not None
 
         if X_norm.ndim == 2:
             # (N, F) — single timestep output from reconstruction
@@ -179,11 +181,13 @@ class ZScoreScaler:
     @property
     def mean(self) -> np.ndarray:
         self._assert_fitted()
+        assert self.mean_ is not None
         return self.mean_.squeeze()
 
     @property
     def std(self) -> np.ndarray:
         self._assert_fitted()
+        assert self.std_ is not None
         return self.std_.squeeze()
 
     def _assert_fitted(self) -> None:
