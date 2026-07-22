@@ -32,3 +32,8 @@ htmlcov/
 tmp/
 .agents/
 skills-lock.json
+
+# Frontend test artifacts
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/

@@ -85,6 +85,18 @@ jobs:
         cd frontend
         npm run test
 
+    - name: Install Playwright browsers
+      run: |
+        cd frontend
+        npx playwright install --with-deps chromium
+
+    - name: Run end-to-end tests
+      run: |
+        cd frontend
+        npm run test:e2e
+      env:
+        CI: true
+
     - name: Scan Frontend dependencies for known vulnerabilities
       run: |
         cd frontend
