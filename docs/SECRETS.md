@@ -23,7 +23,8 @@ production container/Space at all.
 | `GEMINI_API_KEY` | `.env` (copy from `.env.example`) | not injected — Gemini-dependent tests use mocks, never the real API | HF Space → Settings → Repository secrets → exposed as an env var to the container |
 | `HF_TOKEN`, `HF_USERNAME`, `HF_SPACE_NAME` | not needed | GitHub repo → Settings → Secrets and variables → Actions | N/A (used by CI to push to the Space, not read by the app itself) |
 | `FIREBASE_SERVICE_ACCOUNT` | not needed | GitHub repo secrets | N/A (used by CI's Firebase deploy action) |
-| `ALLOWED_ORIGINS`, `DATA_DIR`, `MODEL_PATH`, `ENVIRONMENT` | `.env` (non-secret, safe defaults) | not overridden — CI's defaults are fine for tests | HF Space repository secrets or Space "Variables" (non-secret ones can be plain Space variables rather than secrets) |
+| `DATABASE_URL` | `.env` (points at the local `docker compose` Postgres, non-secret) | GitHub repo secrets — read by the `test-and-lint` job's Postgres service container and by the `deploy` job's explicit `alembic upgrade head` step | HF Space → Settings → Repository secrets (real connection string, incl. credentials) |
+| `ALLOWED_ORIGINS`, `DATA_DIR`, `MODEL_PATH`, `ENVIRONMENT`, `INCIDENT_RETENTION_DAYS` | `.env` (non-secret, safe defaults) | not overridden — CI's defaults are fine for tests | HF Space repository secrets or Space "Variables" (non-secret ones can be plain Space variables rather than secrets) |
 
 ## `ENVIRONMENT` and stricter production validation
 
@@ -37,6 +38,19 @@ When set to `"production"`, `Settings` enforces at startup:
   real traffic with CORS errors.
 - `MODEL_PATH` must point at a file that actually exists — a production
   backend cannot usefully start without its reconstruction model.
+- `DATABASE_URL` must not be the local-development default
+  (`postgres:postgres@localhost`) — a production deployment cannot silently
+  start pointed at a database that doesn't exist in that environment.
+
+**Migrations are never run automatically at app startup.** `alembic upgrade
+head` runs as an explicit step in the `deploy` job of
+`.github/workflows/ci.yml`, before the app is deployed — this keeps schema
+changes visible and auditable in the CI log rather than happening implicitly
+inside the FastAPI `lifespan`. Running migrations against the real
+`DATABASE_URL` secret locally or in CI requires `alembic`, which is a
+dev-only dependency (`requirements-dev.txt`) — the production `Dockerfile`
+never installs it, since the deployed app process itself never runs
+migrations.
 
 `GEMINI_API_KEY` is intentionally **not** required in production: the app is
 designed to run fully offline without it (see

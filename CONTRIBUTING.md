@@ -18,6 +18,17 @@ npm install
 npx playwright install --with-deps chromium   # only needed for E2E tests
 ```
 
+**Database (incident persistence)**
+```bash
+docker compose up -d postgres   # local Postgres, matches CI's service container
+alembic upgrade head             # applies migrations — never run automatically at app startup
+```
+Set `DATABASE_URL` in `.env` if you're not using the default
+`docker-compose.yml` credentials. To add a schema change, edit
+`backend/persistence/models.py` and generate a migration with
+`alembic revision --autogenerate -m "..."` — always hand-review the
+generated file before committing it.
+
 See the [README](README.md#getting-started) for full setup instructions, including environment variables and how to run the app locally.
 
 ## Before opening a pull request
@@ -41,7 +52,7 @@ npm run test:e2e   # slower; run at least once before a PR touching UI behavior
 
 ## Testing expectations
 
-- **New backend logic** (a service, a route, a data/ML pipeline function) needs tests in `tests/`. Follow the existing pattern: one test file per module, `pytest.fixture(scope="module")` for anything expensive to set up (loading the METR-LA dataset, the LightGBM checkpoint), and mock only genuinely external calls (Gemini) — not your own code.
+- **New backend logic** (a service, a route, a data/ML pipeline function) needs tests in `tests/`. Follow the existing pattern: one test file per module, `pytest.fixture(scope="module")` for anything expensive to set up (loading the METR-LA dataset, the LightGBM checkpoint), and mock only genuinely external calls (Gemini) — not your own code. A locally/CI-provisioned Postgres counts as project infra, not an external call — repository-layer tests (`tests/test_incident_repository.py`) run against a real database, not a mock. Run `docker compose up -d postgres && alembic upgrade head` before `pytest` if you're touching anything under `backend/persistence/`.
 - **New frontend logic** (a store action, a hook, a component with real interaction) needs a Vitest test alongside it. If the component uses `motion/react`, you don't need to do anything special — `src/test/setup.ts` already mocks it so `AnimatePresence` unmounts synchronously.
 - **A new user-facing flow** (a new control, a new modal, a new page) is a candidate for a Playwright spec in `frontend/e2e/` — but keep these few and thin; they're the most expensive tests to run and maintain. Prefer covering logic at the unit/component level first.
 - **A bug fix** should include a regression test that fails without the fix.
