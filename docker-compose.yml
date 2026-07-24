@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: traffitwin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: .
@@ -7,6 +23,10 @@ services:
       - .env
     environment:
       ALLOWED_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/traffitwin
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "7860:7860"
 
@@ -20,3 +40,6 @@ services:
       - backend
     ports:
       - "5173:5173"
+
+volumes:
+  postgres_data:
