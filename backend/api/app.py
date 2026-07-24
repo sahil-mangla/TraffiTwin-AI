@@ -16,6 +16,8 @@ from backend.core.exceptions import TraffiTwinException
 from backend.api.routes import router
 from backend.services.twin_service import TwinService
 from backend.services.incident_intelligence_service import IncidentIntelligenceService
+from backend.persistence.db import get_session_factory, dispose_engine
+from backend.persistence.incident_repository import PostgresIncidentRepository
 from backend.config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +36,8 @@ async def lifespan(app: FastAPI):
     # NOT at import time (which would break tests if the model file is absent).
     logger.info("Starting TraffiTwin AI Backend...")
     twin_service = TwinService()
-    incident_service = IncidentIntelligenceService()
+    incident_repository = PostgresIncidentRepository(get_session_factory())
+    incident_service = IncidentIntelligenceService(incident_repository=incident_repository)
     try:
         twin_service.initialize()
         logger.info("==================================================")
@@ -53,6 +56,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     logger.info("Shutting down TraffiTwin AI Backend...")
+    await dispose_engine()
 
 app = FastAPI(
     title="TraffiTwin AI API",
