@@ -3,6 +3,8 @@ from typing import List, Literal
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_DEFAULT_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/traffitwin"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -32,6 +34,14 @@ class Settings(BaseSettings):
         validation_alias="ALLOWED_ORIGINS"
     )
 
+    # SecretStr — a Postgres connection string embeds credentials, same
+    # rationale as gemini_api_key above.
+    database_url: SecretStr = Field(default=SecretStr(_DEFAULT_DATABASE_URL), validation_alias="DATABASE_URL")
+
+    # How long persisted incident summaries are kept before the scheduled
+    # prune job (scripts/prune_incidents.py) deletes them.
+    incident_retention_days: int = Field(default=14, validation_alias="INCIDENT_RETENTION_DAYS")
+
     @property
     def allowed_origins(self) -> List[str]:
         return [o.strip() for o in self.allowed_origins_raw.split(",") if o.strip()]
@@ -54,6 +64,13 @@ class Settings(BaseSettings):
                 f"ENVIRONMENT=production requires MODEL_PATH to point at an existing file "
                 f"(got '{self.model_path}') — a production deployment cannot silently start "
                 f"without a reconstruction model."
+            )
+
+        if self.database_url.get_secret_value() == _DEFAULT_DATABASE_URL:
+            raise ValueError(
+                "ENVIRONMENT=production requires DATABASE_URL to be set to a real "
+                "database connection string — refusing to start with the local- "
+                "development default (postgres:postgres@localhost)."
             )
 
         return self

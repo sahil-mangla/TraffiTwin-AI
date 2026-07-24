@@ -39,6 +39,7 @@ def test_production_accepts_explicit_non_localhost_origin(tmp_path):
         ENVIRONMENT="production",
         MODEL_PATH=str(model_path),
         ALLOWED_ORIGINS="https://traffitwin-ai.web.app",
+        DATABASE_URL="postgresql+asyncpg://user:pw@prod-host:5432/traffitwin",
     )
     assert settings.allowed_origins == ["https://traffitwin-ai.web.app"]
 
@@ -65,3 +66,28 @@ def test_development_does_not_require_model_path_to_exist():
 def test_invalid_environment_value_rejected():
     with pytest.raises(ValidationError):
         Settings(_env_file=None, ENVIRONMENT="staging")
+
+
+def test_database_url_is_masked_as_secret_str():
+    settings = Settings(_env_file=None, DATABASE_URL="postgresql+asyncpg://user:super-secret@host:5432/db")
+    assert "super-secret" not in str(settings.database_url)
+    assert "super-secret" not in repr(settings)
+    assert settings.database_url.get_secret_value() == "postgresql+asyncpg://user:super-secret@host:5432/db"
+
+
+def test_incident_retention_days_defaults_to_14():
+    settings = Settings(_env_file=None)
+    assert settings.incident_retention_days == 14
+
+
+def test_production_rejects_default_database_url(tmp_path):
+    model_path = tmp_path / "model.pkl"
+    model_path.write_text("stub")
+
+    with pytest.raises(ValidationError, match="DATABASE_URL to be set to a real"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            MODEL_PATH=str(model_path),
+            ALLOWED_ORIGINS="https://traffitwin-ai.web.app",
+        )
