@@ -81,3 +81,43 @@ def test_step_simulation_invalid_steps(client):
     r = client.post("/step", json={"steps": 0})
     assert r.status_code == 422
     assert r.json()["error_code"] == "InvalidSimulationStepError"
+
+
+def test_incident_history_route_empty_for_unused_sensor(client):
+    # A sensor_id that has never had an incident recorded — proves the
+    # filter param works and the route doesn't just return everything.
+    r = client.get("/incidents/history", params={"sensor_id": 987654})
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_incident_history_route_after_incident(client):
+    r = client.post("/simulate_failure", json={"sensor_id": 15, "duration": 5})
+    assert r.status_code == 200
+
+    # /analyze-current-state reports on the *first* currently-failed sensor
+    # by index (see routes.py), not necessarily 15 — other tests in this
+    # module may have left an earlier sensor still failing. Read back which
+    # sensor(s) are actually failed rather than assuming it's 15.
+    failed_sensor_ids = {
+        int(sid) for sid, failed in client.get("/snapshot").json()["masks"].items() if failed
+    }
+    assert failed_sensor_ids  # sensor 15 was just injected, so at least one
+
+    r = client.post("/analyze-current-state")
+    assert r.status_code == 200
+
+    r = client.get("/incidents/history", params={"event_type": "sensor_failure"})
+    assert r.status_code == 200
+    rows = r.json()
+    assert len(rows) >= 1
+    assert rows[0]["sensor_id"] in failed_sensor_ids
+    assert "payload" in rows[0]
+
+
+def test_incident_history_route_limit_validation(client):
+    r = client.get("/incidents/history", params={"limit": 0})
+    assert r.status_code == 422
+
+    r = client.get("/incidents/history", params={"limit": 1001})
+    assert r.status_code == 422

@@ -1,16 +1,16 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from backend.api.schemas import (
     HealthResponse,
     SimulateFailureRequest, SimulateFailureResponse,
     StepRequest, StepResponse,
     TwinSnapshotResponse, MetricsResponse,
     GraphResponse, GraphNode, GraphEdge, SystemStateResponse,
-    IncidentSummaryResponse, GenerateSummaryRequest, GenerateSummaryResponse
+    IncidentSummaryResponse, IncidentHistoryResponse, GenerateSummaryRequest, GenerateSummaryResponse
 )
 from backend.services.twin_service import TwinService
 from backend.core.exceptions import ServiceUnavailableError, InvalidSimulationStepError
 from datetime import datetime, timezone
-from typing import Any, List
+from typing import Any, List, Optional
 
 router = APIRouter()
 
@@ -163,6 +163,22 @@ async def get_incident_summaries(incident: Any = Depends(get_incident_service)):
     AI-enriched), newest first, capped at 20 entries."""
     summaries = incident.get_latest_summaries()
     return [IncidentSummaryResponse(**s) for s in summaries]
+
+
+@router.get("/incidents/history", response_model=List[IncidentHistoryResponse])
+async def get_incident_history(
+    sensor_id: Optional[int] = None,
+    event_type: Optional[str] = None,
+    since: Optional[datetime] = None,
+    limit: int = Query(default=100, ge=1, le=1000),
+    incident: Any = Depends(get_incident_service),
+):
+    """Durable, unbounded (subject to `limit`) incident history backed by
+    Postgres — distinct from GET /incident-summaries, which is the fast,
+    bounded (20-entry) in-memory cache. Returns [] if no repository is
+    configured (e.g. in unit tests using the default in-memory service)."""
+    rows = await incident.get_history(sensor_id=sensor_id, event_type=event_type, since=since, limit=limit)
+    return [IncidentHistoryResponse(**r) for r in rows]
 
 
 @router.post("/generate-incident-summary", response_model=GenerateSummaryResponse)

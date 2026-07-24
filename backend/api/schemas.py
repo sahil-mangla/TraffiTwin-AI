@@ -57,6 +57,23 @@ class IncidentSummaryResponse(BaseModel):
     summary: str
     is_ai: bool
 
+class IncidentHistoryResponse(BaseModel):
+    incident_id: str
+    timestamp: str
+    sensor_id: Optional[int] = None
+    event_type: str
+    summary: str
+    is_ai: bool
+    failure_duration_minutes: float
+    reconstructed: bool
+    observability: float
+    mae: float
+    rmse: float
+    active_failures: int
+    reconstructed_nodes: int
+    network_status: str
+    payload: Dict[str, Any]
+
 class GenerateSummaryRequest(BaseModel):
     sensor_id: Optional[int] = None
     event_type: str
