@@ -16,6 +16,8 @@ pinned: false
 *   **Backend API:** [sahilmangla-traffitwin-backend.hf.space](https://sahilmangla-traffitwin-backend.hf.space)
 *   **API Docs:** [sahilmangla-traffitwin-backend.hf.space/docs](https://sahilmangla-traffitwin-backend.hf.space/docs)
 
+[![CI/CD](https://github.com/sahil-mangla/TraffiTwin-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/sahil-mangla/TraffiTwin-AI/actions/workflows/ci.yml)
+[![Coverage](https://raw.githubusercontent.com/sahil-mangla/TraffiTwin-AI/main/.github/badges/coverage.svg)](https://github.com/sahil-mangla/TraffiTwin-AI/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-19%2B-20232A?logo=react&logoColor=61DAFB)](https://react.dev/)
