@@ -9,6 +9,7 @@ from backend.services.circuit_breaker import CircuitBreaker
 from backend.services.rule_based_reporter import RuleBasedReporter
 from backend.services.gemini_service import GeminiService
 from backend.services.twin_service import TwinService
+from backend.persistence.incident_repository import IncidentRepositoryProtocol, NullIncidentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -35,19 +36,40 @@ class IncidentIntelligenceService:
     """
     Orchestrator for deterministic & AI incident summary reporting.
     """
-    def __init__(self, gemini_service: Optional[GeminiService] = None):
+    def __init__(
+        self,
+        gemini_service: Optional[GeminiService] = None,
+        incident_repository: Optional["IncidentRepositoryProtocol"] = None,
+    ):
         self.rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
         self.circuit_breaker = CircuitBreaker(max_failures=3, cooldown_seconds=600)
         self.rule_based_reporter = RuleBasedReporter()
         self.gemini_service = gemini_service or GeminiService()
         self.deduplicator = EventDeduplicator(ttl=120.0)
-        
+        self.incident_repository = incident_repository or NullIncidentRepository()
+
         # Latest 20 summaries
         self.summaries_cache: List[Dict[str, Any]] = []
         self.latest_summary_text: Optional[str] = None
 
     def get_latest_summaries(self) -> List[Dict[str, Any]]:
         return self.summaries_cache
+
+    async def get_history(
+        self,
+        sensor_id: Optional[int] = None,
+        event_type: Optional[str] = None,
+        since: Optional[datetime] = None,
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """Durable, unbounded (subject to `limit`) incident history from
+        Postgres — distinct from get_latest_summaries(), the fast bounded
+        (20-entry) in-memory cache. Returns [] if no repository is
+        configured (e.g. a service constructed with no injected repository,
+        as in most unit tests)."""
+        return await self.incident_repository.list_history(
+            sensor_id=sensor_id, event_type=event_type, since=since, limit=limit
+        )
 
     def get_latest_summary_text(self) -> Optional[str]:
         return self.latest_summary_text
@@ -151,11 +173,11 @@ class IncidentIntelligenceService:
             else:
                 logger.info(f"Duplicate event {event_type} on Sensor {sensor_id} detected. Skipping Gemini.")
 
-        self.cache_report(incident, final_summary, is_ai)
+        await self.cache_report(incident, final_summary, is_ai)
         self.latest_summary_text = final_summary
         return final_summary
 
-    def cache_report(self, incident: dict, summary: str, is_ai: bool):
+    async def cache_report(self, incident: dict, summary: str, is_ai: bool):
         entry = {
             "incident_id": incident["incident_id"],
             "timestamp": incident["timestamp"],
@@ -167,6 +189,14 @@ class IncidentIntelligenceService:
         }
         self.summaries_cache.insert(0, entry)
         self.summaries_cache = self.summaries_cache[:20]
+
+        # Additive, best-effort persistence — a Postgres outage must never
+        # break the request path (/simulate_failure, /step,
+        # /analyze-current-state all transitively call this).
+        try:
+            await self.incident_repository.save(entry)
+        except Exception as e:
+            logger.error(f"Failed to persist incident {entry['incident_id']} to Postgres: {e}")
 
     async def generate_from_payload(self, incident: dict) -> str:
         """

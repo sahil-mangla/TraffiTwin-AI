@@ -234,3 +234,46 @@ def test_clear_latest_summary():
     service.latest_summary_text = "something"
     service.clear_latest_summary()
     assert service.get_latest_summary_text() is None
+
+
+# --- incident persistence (repository dependency injection) --
+
+def test_process_event_awaits_incident_repository_save():
+    fake_gemini = AsyncMock()
+    fake_gemini.enrich_report = AsyncMock(return_value="AI-enriched summary")
+    fake_repository = AsyncMock()
+    service = IncidentIntelligenceService(gemini_service=fake_gemini, incident_repository=fake_repository)
+    twin = make_fake_twin()
+
+    asyncio.run(service.process_event(twin, "sensor_failure", sensor_id=0, duration=5))
+
+    fake_repository.save.assert_awaited_once()
+    saved_entry = fake_repository.save.await_args.args[0]
+    assert saved_entry["sensor_id"] == 0
+    assert saved_entry["summary"] == "AI-enriched summary"
+    assert saved_entry["is_ai"] is True
+
+
+def test_process_event_does_not_raise_when_repository_save_fails():
+    fake_gemini = AsyncMock()
+    fake_gemini.enrich_report = AsyncMock(return_value="AI-enriched summary")
+    fake_repository = AsyncMock()
+    fake_repository.save = AsyncMock(side_effect=RuntimeError("db down"))
+    service = IncidentIntelligenceService(gemini_service=fake_gemini, incident_repository=fake_repository)
+    twin = make_fake_twin()
+
+    result = asyncio.run(service.process_event(twin, "sensor_failure", sensor_id=0, duration=5))
+
+    assert result == "AI-enriched summary"  # request path unaffected by DB outage
+    assert service.get_latest_summaries()[0]["summary"] == "AI-enriched summary"
+
+
+def test_get_history_delegates_to_repository():
+    fake_repository = AsyncMock()
+    fake_repository.list_history = AsyncMock(return_value=[{"incident_id": "inc-1"}])
+    service = IncidentIntelligenceService(gemini_service=AsyncMock(), incident_repository=fake_repository)
+
+    result = asyncio.run(service.get_history(sensor_id=3, limit=5))
+
+    assert result == [{"incident_id": "inc-1"}]
+    fake_repository.list_history.assert_awaited_once_with(sensor_id=3, event_type=None, since=None, limit=5)
