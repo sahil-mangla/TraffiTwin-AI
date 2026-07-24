@@ -11,3 +11,9 @@ import os
 # checkpoint (lightgbm/basic.py __setstate__) caused by two OpenMP runtimes
 # (numpy's and lightgbm's bundled libomp) initializing in the same process.
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
+# No DATABASE_URL default needed here: backend.config.Settings already
+# defaults to postgres:postgres@localhost:5432/traffitwin, which matches the
+# docker-compose.yml postgres service — running `pytest` locally against
+# `docker compose up -d postgres` works with no extra env setup. CI sets its
+# own DATABASE_URL explicitly for the ephemeral service container (ci.yml).

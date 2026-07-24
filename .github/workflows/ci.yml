@@ -11,6 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: traffitwin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/traffitwin_test
     steps:
     - uses: actions/checkout@v4
       with:
@@ -53,6 +69,13 @@ jobs:
     - name: Scan Python dependencies for known vulnerabilities
       run: |
         pip-audit -r requirements.txt
+
+    - name: Apply database migrations
+      # Runs the actual migration file against the ephemeral CI Postgres —
+      # both provisions the schema for the test run and validates the
+      # migration itself applies cleanly on every PR.
+      run: |
+        alembic upgrade head
 
     - name: Run tests with pytest
       run: |
@@ -153,6 +176,25 @@ jobs:
 
     - name: Pull Git LFS objects
       run: git lfs pull
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: '.python-version'
+        cache: 'pip'
+
+    - name: Run database migrations
+      # Explicit, visible pipeline step — deliberately NOT run inside the
+      # app's startup/lifespan, so a schema change is always an auditable
+      # CI log entry, not implicit app-boot magic. Must run before the app
+      # deploy steps below so new code never runs against an unmigrated
+      # schema. Requires a DATABASE_URL secret pointing at the production
+      # database — see docs/SECRETS.md.
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      run: |
+        pip install -r requirements.txt -r requirements-dev.txt
+        alembic upgrade head
 
     # Backend Deployment to Hugging Face Spaces
     - name: Deploy Backend to Hugging Face Spaces
