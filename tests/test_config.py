@@ -40,6 +40,8 @@ def test_production_accepts_explicit_non_localhost_origin(tmp_path):
         MODEL_PATH=str(model_path),
         ALLOWED_ORIGINS="https://traffitwin-ai.web.app",
         DATABASE_URL="postgresql+asyncpg://user:pw@prod-host:5432/traffitwin",
+        JWT_SECRET_KEY="a-real-production-secret",
+        GOOGLE_OAUTH_CLIENT_ID="client-id.apps.googleusercontent.com",
     )
     assert settings.allowed_origins == ["https://traffitwin-ai.web.app"]
 
@@ -90,4 +92,45 @@ def test_production_rejects_default_database_url(tmp_path):
             ENVIRONMENT="production",
             MODEL_PATH=str(model_path),
             ALLOWED_ORIGINS="https://traffitwin-ai.web.app",
+        )
+
+
+def test_jwt_secret_key_defaults_and_is_masked(tmp_path):
+    settings = Settings(_env_file=None, JWT_SECRET_KEY="super-secret-jwt")
+    assert "super-secret-jwt" not in str(settings.jwt_secret_key)
+    assert "super-secret-jwt" not in repr(settings)
+    assert settings.jwt_secret_key.get_secret_value() == "super-secret-jwt"
+
+
+def test_jwt_expiry_minutes_defaults_to_60():
+    settings = Settings(_env_file=None)
+    assert settings.jwt_expiry_minutes == 60
+
+
+def test_production_rejects_default_jwt_secret_key(tmp_path):
+    model_path = tmp_path / "model.pkl"
+    model_path.write_text("stub")
+
+    with pytest.raises(ValidationError, match="JWT_SECRET_KEY to be set to a real secret"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            MODEL_PATH=str(model_path),
+            ALLOWED_ORIGINS="https://traffitwin-ai.web.app",
+            DATABASE_URL="postgresql+asyncpg://user:pw@prod-host:5432/traffitwin",
+        )
+
+
+def test_production_rejects_missing_google_oauth_client_id(tmp_path):
+    model_path = tmp_path / "model.pkl"
+    model_path.write_text("stub")
+
+    with pytest.raises(ValidationError, match="GOOGLE_OAUTH_CLIENT_ID to be set"):
+        Settings(
+            _env_file=None,
+            ENVIRONMENT="production",
+            MODEL_PATH=str(model_path),
+            ALLOWED_ORIGINS="https://traffitwin-ai.web.app",
+            DATABASE_URL="postgresql+asyncpg://user:pw@prod-host:5432/traffitwin",
+            JWT_SECRET_KEY="a-real-production-secret",
         )

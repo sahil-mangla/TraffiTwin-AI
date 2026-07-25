@@ -4,6 +4,7 @@ from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _DEFAULT_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/traffitwin"
+_DEFAULT_JWT_SECRET_KEY = "dev-insecure-jwt-secret-change-me"
 
 
 class Settings(BaseSettings):
@@ -42,6 +43,16 @@ class Settings(BaseSettings):
     # prune job (scripts/prune_incidents.py) deletes them.
     incident_retention_days: int = Field(default=14, validation_alias="INCIDENT_RETENTION_DAYS")
 
+    # SecretStr — signs/verifies the JWTs issued after a successful Google
+    # login, same rationale as gemini_api_key/database_url above.
+    jwt_secret_key: SecretStr = Field(default=SecretStr(_DEFAULT_JWT_SECRET_KEY), validation_alias="JWT_SECRET_KEY")
+    jwt_expiry_minutes: int = Field(default=60, validation_alias="JWT_EXPIRY_MINUTES")
+
+    # The OAuth client ID Google issues ID tokens for; verified server-side
+    # on every /auth/google login so a token minted for a different app
+    # can't be replayed against this API.
+    google_oauth_client_id: SecretStr = Field(default=SecretStr(""), validation_alias="GOOGLE_OAUTH_CLIENT_ID")
+
     @property
     def allowed_origins(self) -> List[str]:
         return [o.strip() for o in self.allowed_origins_raw.split(",") if o.strip()]
@@ -71,6 +82,18 @@ class Settings(BaseSettings):
                 "ENVIRONMENT=production requires DATABASE_URL to be set to a real "
                 "database connection string — refusing to start with the local- "
                 "development default (postgres:postgres@localhost)."
+            )
+
+        if self.jwt_secret_key.get_secret_value() == _DEFAULT_JWT_SECRET_KEY:
+            raise ValueError(
+                "ENVIRONMENT=production requires JWT_SECRET_KEY to be set to a real "
+                "secret — refusing to start with the insecure development default."
+            )
+
+        if not self.google_oauth_client_id.get_secret_value():
+            raise ValueError(
+                "ENVIRONMENT=production requires GOOGLE_OAUTH_CLIENT_ID to be set — "
+                "refusing to start without a way to verify Google login tokens."
             )
 
         return self
