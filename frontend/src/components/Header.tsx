@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useTwinStore } from '../store/twinStore';
+import { LoginGate } from './LoginGate';
 
 function StatPill({
   label,
@@ -106,22 +107,25 @@ export function Header() {
         />
       </div>
 
-      {/* Right: Operational Status */}
-      <div className="flex items-center gap-2" role="status" aria-label={`System health: ${healthLabel}`}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={systemHealth}
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ background: healthColor }}
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.5, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          />
-        </AnimatePresence>
-        <span className="text-xs font-mono font-semibold tracking-widest" style={{ color: healthColor }}>
-          {healthLabel}
-        </span>
+      {/* Right: Login + Operational Status */}
+      <div className="flex items-center gap-4">
+        <LoginGate />
+        <div className="flex items-center gap-2" role="status" aria-label={`System health: ${healthLabel}`}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={systemHealth}
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ background: healthColor }}
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            />
+          </AnimatePresence>
+          <span className="text-xs font-mono font-semibold tracking-widest" style={{ color: healthColor }}>
+            {healthLabel}
+          </span>
+        </div>
       </div>
     </header>
   );
