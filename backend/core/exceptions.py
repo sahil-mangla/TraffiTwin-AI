@@ -23,3 +23,9 @@ class ServiceUnavailableError(TraffiTwinException):
     """Raised when the requested backend service is not initialized"""
     def __init__(self, service_name: str):
         super().__init__(f"Service '{service_name}' is not initialized", status_code=503)
+
+
+class AuthenticationError(TraffiTwinException):
+    """Raised when a request is missing, or presents an invalid/expired, JWT"""
+    def __init__(self, message: str = "Missing or invalid authentication token"):
+        super().__init__(message, status_code=401)
