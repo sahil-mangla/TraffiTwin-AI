@@ -24,6 +24,9 @@ production container/Space at all.
 | `HF_TOKEN`, `HF_USERNAME`, `HF_SPACE_NAME` | not needed | GitHub repo → Settings → Secrets and variables → Actions | N/A (used by CI to push to the Space, not read by the app itself) |
 | `FIREBASE_SERVICE_ACCOUNT` | not needed | GitHub repo secrets | N/A (used by CI's Firebase deploy action) |
 | `DATABASE_URL` | `.env` (points at the local `docker compose` Postgres, non-secret) | GitHub repo secrets — read by the `test-and-lint` job's Postgres service container and by the `deploy` job's explicit `alembic upgrade head` step | HF Space → Settings → Repository secrets (real connection string, incl. credentials) |
+| `JWT_SECRET_KEY` | `.env` (dev-only default, insecure by design) | not injected — the default is fine for tests since `ENVIRONMENT` stays `development` in CI | HF Space → Settings → Repository secrets (a real random secret, e.g. `openssl rand -hex 32`) |
+| `GOOGLE_OAUTH_CLIENT_ID` | `.env` (your own Google Cloud OAuth client ID, or leave unset — `/auth/dev-login` works without it) | not injected — auth tests mock Google verification, and E2E uses `/auth/dev-login` instead of the real OAuth flow | HF Space → Settings → Repository secrets |
+| `VITE_GOOGLE_CLIENT_ID` (frontend) | `frontend/.env` | not needed | `frontend/.env.production` — **not secret**: OAuth client IDs are meant to be public (they identify the app, not authenticate it), same treatment as `VITE_API_BASE_URL`. |
 | `ALLOWED_ORIGINS`, `DATA_DIR`, `MODEL_PATH`, `ENVIRONMENT`, `INCIDENT_RETENTION_DAYS` | `.env` (non-secret, safe defaults) | not overridden — CI's defaults are fine for tests | HF Space repository secrets or Space "Variables" (non-secret ones can be plain Space variables rather than secrets) |
 
 ## `ENVIRONMENT` and stricter production validation
@@ -41,6 +44,16 @@ When set to `"production"`, `Settings` enforces at startup:
 - `DATABASE_URL` must not be the local-development default
   (`postgres:postgres@localhost`) — a production deployment cannot silently
   start pointed at a database that doesn't exist in that environment.
+- `JWT_SECRET_KEY` must not be the insecure development default — a
+  production deployment signing session tokens with a publicly-known secret
+  would let anyone forge a valid login.
+- `GOOGLE_OAUTH_CLIENT_ID` must be set — without it there is no way to
+  verify a Google-issued ID token server-side, and `/auth/google` would
+  otherwise silently accept tokens issued for a different application.
+
+Note: `POST /auth/dev-login` (issues a JWT for a fixed stub user, used by
+local development and CI/E2E to avoid a real Google account) is disabled
+entirely — returns 404 — whenever `ENVIRONMENT=production`.
 
 **Migrations are never run automatically at app startup.** `alembic upgrade
 head` runs as an explicit step in the `deploy` job of
