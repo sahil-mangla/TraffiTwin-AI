@@ -47,3 +47,7 @@ google-genai>=0.3.0
 # Persistence (incident summaries)
 sqlalchemy[asyncio]>=2.0.25
 asyncpg>=0.29.0
+
+# Auth (Google OAuth2 login + JWT session tokens)
+python-jose[cryptography]>=3.3.0
+google-auth>=2.28.0
