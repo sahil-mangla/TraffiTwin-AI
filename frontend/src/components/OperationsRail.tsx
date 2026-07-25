@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTwinStore, type AnalysisCard, type AnalysisSource } from '../store/twinStore';
+import { useAuthStore } from '../store/authStore';
 
 // ── Animated Number Counter ───────────────────────────────────────────────────
 function AnimatedNumber({ value, decimals = 2 }: { value: number; decimals?: number }) {
@@ -237,33 +238,36 @@ export function OperationsRail() {
   const analysisFeed = useTwinStore((s) => s.analysisFeed);
   const runQuickAction = useTwinStore((s) => s.runQuickAction);
   const clearAnalysisFeed = useTwinStore((s) => s.clearAnalysisFeed);
+  const isAuthenticated = useAuthStore((s) => s.token !== null);
 
   const [customQuery, setCustomQuery] = useState('');
   const feedRef = useRef<HTMLDivElement>(null);
 
+  const actionsDisabled = isAnalyzing || !isAuthenticated;
+
   const handleQuickAction = useCallback(
     (action: AnalysisSource) => {
-      if (!isAnalyzing) runQuickAction(action);
+      if (!actionsDisabled) runQuickAction(action);
     },
-    [isAnalyzing, runQuickAction]
+    [actionsDisabled, runQuickAction]
   );
 
   const handleSuggestion = useCallback(
     (q: string) => {
-      if (!isAnalyzing) runQuickAction('custom_query', q);
+      if (!actionsDisabled) runQuickAction('custom_query', q);
     },
-    [isAnalyzing, runQuickAction]
+    [actionsDisabled, runQuickAction]
   );
 
   const handleCustomSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       const q = customQuery.trim();
-      if (!q || isAnalyzing) return;
+      if (!q || actionsDisabled) return;
       runQuickAction('custom_query', q);
       setCustomQuery('');
     },
-    [customQuery, isAnalyzing, runQuickAction]
+    [customQuery, actionsDisabled, runQuickAction]
   );
 
   if (isLoading || !metrics || !snapshot) {
@@ -341,7 +345,7 @@ export function OperationsRail() {
               action="analyze_system_state"
               color="#3B82F6"
               onAction={handleQuickAction}
-              disabled={isAnalyzing}
+              disabled={actionsDisabled}
             />
             <QuickActionBtn
               label="Failures"
@@ -349,7 +353,7 @@ export function OperationsRail() {
               action="current_failures"
               color="#EF4444"
               onAction={handleQuickAction}
-              disabled={isAnalyzing}
+              disabled={actionsDisabled}
             />
             <QuickActionBtn
               label="Incidents"
@@ -357,7 +361,7 @@ export function OperationsRail() {
               action="recent_incidents"
               color="#F59E0B"
               onAction={handleQuickAction}
-              disabled={isAnalyzing}
+              disabled={actionsDisabled}
             />
             <QuickActionBtn
               label="Metrics"
@@ -365,7 +369,7 @@ export function OperationsRail() {
               action="performance_metrics"
               color="#10B981"
               onAction={handleQuickAction}
-              disabled={isAnalyzing}
+              disabled={actionsDisabled}
             />
           </div>
         </div>
@@ -386,7 +390,7 @@ export function OperationsRail() {
                 key={q}
                 label={q}
                 onSelect={handleSuggestion}
-                disabled={isAnalyzing}
+                disabled={actionsDisabled}
               />
             ))}
           </div>
@@ -478,14 +482,14 @@ export function OperationsRail() {
           />
           <button
             type="submit"
-            disabled={isAnalyzing || !customQuery.trim()}
+            disabled={actionsDisabled || !customQuery.trim()}
             className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer disabled:opacity-65 disabled:cursor-not-allowed"
             style={{
-              background: customQuery.trim() && !isAnalyzing ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${customQuery.trim() && !isAnalyzing ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.12)'}`,
+              background: customQuery.trim() && !actionsDisabled ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${customQuery.trim() && !actionsDisabled ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.12)'}`,
             }}
           >
-            <span className="text-[11px]" style={{ color: customQuery.trim() && !isAnalyzing ? '#C084FC' : '#FFFFFF' }}>
+            <span className="text-[11px]" style={{ color: customQuery.trim() && !actionsDisabled ? '#C084FC' : '#FFFFFF' }}>
               ↑
             </span>
           </button>

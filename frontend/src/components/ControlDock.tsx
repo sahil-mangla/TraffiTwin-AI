@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTwinStore } from '../store/twinStore';
+import { useAuthStore } from '../store/authStore';
 import { api } from '../api/trafitwin';
 
 interface Props {
@@ -12,9 +13,11 @@ export function ControlDock({ onStep }: Props) {
   const toggleAutoplay = useTwinStore((s) => s.toggleAutoplay);
   const clearEvents = useTwinStore((s) => s.clearEvents);
   const addEvent = useTwinStore((s) => s.addEvent);
+  const isAuthenticated = useAuthStore((s) => s.token !== null);
 
   const [stepping, setStepping] = useState(false);
   const [showInjectModal, setShowInjectModal] = useState(false);
+  const authTitle = isAuthenticated ? undefined : 'Sign in with Google to control the simulation';
 
   async function handleStep() {
     if (stepping) return;
@@ -38,7 +41,8 @@ export function ControlDock({ onStep }: Props) {
           {/* Step */}
           <button
             onClick={handleStep}
-            disabled={stepping || isAutoplay}
+            disabled={stepping || isAutoplay || !isAuthenticated}
+            title={authTitle}
             className="flex items-center gap-2 px-4 py-2 rounded bg-[#1A2230] border border-[#2A3545] text-xs font-mono text-[#E8EDF4] hover:border-[#3B82F6] hover:text-[#3B82F6] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             aria-label="Step simulation by one time step"
           >
@@ -53,7 +57,9 @@ export function ControlDock({ onStep }: Props) {
           {/* Auto Play */}
           <button
             onClick={toggleAutoplay}
-            className={`flex items-center gap-2 px-4 py-2 rounded border text-xs font-mono transition-colors ${
+            disabled={!isAuthenticated}
+            title={authTitle}
+            className={`flex items-center gap-2 px-4 py-2 rounded border text-xs font-mono transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               isAutoplay
                 ? 'bg-[#3B82F6]/20 border-[#3B82F6] text-[#3B82F6]'
                 : 'bg-[#1A2230] border-[#2A3545] text-[#E8EDF4] hover:border-[#3B82F6] hover:text-[#3B82F6]'
@@ -68,7 +74,9 @@ export function ControlDock({ onStep }: Props) {
           {/* Inject Failure */}
           <button
             onClick={() => setShowInjectModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded bg-[#F59E0B]/10 border border-[#F59E0B]/40 text-[#F59E0B] text-xs font-mono hover:bg-[#F59E0B]/20 hover:border-[#F59E0B] transition-colors"
+            disabled={!isAuthenticated}
+            title={authTitle}
+            className="flex items-center gap-2 px-4 py-2 rounded bg-[#F59E0B]/10 border border-[#F59E0B]/40 text-[#F59E0B] text-xs font-mono hover:bg-[#F59E0B]/20 hover:border-[#F59E0B] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Inject sensor failure"
           >
             <span>⚡</span>

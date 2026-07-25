@@ -1,9 +1,19 @@
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
+import { useAuthStore } from '../store/authStore';
 
 afterEach(() => {
   cleanup();
+});
+
+// Most component tests exercise the "happy path" of controls that are now
+// gated behind auth (STEP, AUTO PLAY, INJECT FAILURE, AI analysis actions).
+// Default every test to a signed-in state so existing tests don't need to
+// know about auth; tests specifically covering the logged-out/disabled
+// state opt out with useAuthStore.setState({ token: null }).
+beforeEach(() => {
+  useAuthStore.setState({ token: 'test-token', email: 'test@example.com' });
 });
 
 // jsdom has no real animation frames, so framer-motion/`motion` exit

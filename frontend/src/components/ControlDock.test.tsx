@@ -3,6 +3,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ControlDock } from './ControlDock';
 import { useTwinStore } from '../store/twinStore';
+import { useAuthStore } from '../store/authStore';
 import { api } from '../api/trafitwin';
 
 vi.mock('../api/trafitwin', () => ({
@@ -104,5 +105,14 @@ describe('ControlDock', () => {
 
     expect(screen.queryByRole('dialog', { name: 'INJECT SENSOR FAILURE' })).not.toBeInTheDocument();
     expect(api.injectFailure).not.toHaveBeenCalled();
+  });
+
+  it('STEP, AUTO PLAY, and INJECT FAILURE are disabled when logged out', () => {
+    useAuthStore.setState({ token: null, email: null });
+    render(<ControlDock onStep={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Step simulation by one time step' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Start auto play' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Inject sensor failure' })).toBeDisabled();
   });
 });
