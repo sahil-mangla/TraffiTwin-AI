@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.core.exceptions import TraffiTwinException
 from backend.api.routes import router
+from backend.auth.routes import router as auth_router
 from backend.services.twin_service import TwinService
 from backend.services.incident_intelligence_service import IncidentIntelligenceService
 from backend.persistence.db import get_session_factory, dispose_engine
@@ -110,13 +111,15 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 # CORS – explicit origins only; credentials not needed (no cookies/auth).
 # NOTE: allow_credentials=False is intentional — combining credentials=True
 # with a wildcard origin is forbidden by the CORS spec and would be rejected
-# by all modern browsers anyway.
+# by all modern browsers anyway. Auth uses a bearer token in the
+# Authorization header, not cookies, so this stays False.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept", "Origin"],
+    allow_headers=["Content-Type", "Accept", "Origin", "Authorization"],
 )
 
 app.include_router(router)
+app.include_router(auth_router)

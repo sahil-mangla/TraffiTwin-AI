@@ -5,6 +5,16 @@ class HealthResponse(BaseModel):
     status: str
     version: str
 
+# ── New: Auth ──────────────────────────────────────────────────────────────
+
+class GoogleLoginRequest(BaseModel):
+    id_token: str = Field(..., description="Google-issued ID token from the frontend Sign-In flow")
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    email: str
+
 class SimulateFailureRequest(BaseModel):
     sensor_id: int = Field(..., description="ID of the sensor to fail")
     duration: int = Field(..., description="Duration of the failure in time steps")
