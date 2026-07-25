@@ -1,12 +1,20 @@
 import type { SystemState, GraphData } from '../types/api';
+import { useAuthStore } from '../store/authStore';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = useAuthStore.getState().token;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...options,
   });
+  if (res.status === 401) {
+    useAuthStore.getState().logout();
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`${res.status}: ${text}`);
@@ -43,4 +51,11 @@ export const api = {
 
   /** Health check. */
   getHealth: (): Promise<{ status: string; version: string }> => request('/health'),
+
+  /** Exchange a Google ID token for a TraffiTwin session JWT. */
+  loginWithGoogle: (idToken: string): Promise<{ access_token: string; token_type: string; email: string }> =>
+    request('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ id_token: idToken }),
+    }),
 };
