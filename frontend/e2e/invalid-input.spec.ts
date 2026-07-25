@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { loginAsDevUser } from './helpers/auth';
 
 test('rejects an invalid sensor failure injection and keeps the modal open', async ({ page }) => {
+  await loginAsDevUser(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Dismiss briefing' }).click();
 

@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { loginAsDevUser } from './helpers/auth';
 
 test('injecting a sensor failure surfaces it in the event log', async ({ page }) => {
+  await loginAsDevUser(page);
   await page.goto('/');
 
   // Dismiss the startup briefing modal so it doesn't intercept clicks.

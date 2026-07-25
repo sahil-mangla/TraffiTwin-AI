@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { loginAsDevUser } from './helpers/auth';
 
 test('auto play advances the simulation and disables manual stepping until paused', async ({ page }) => {
+  await loginAsDevUser(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Dismiss briefing' }).click();
 
