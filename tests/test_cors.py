@@ -31,7 +31,25 @@ import backend.config
 backend.config.settings = backend.config.Settings()
 
 from fastapi.testclient import TestClient
+import backend.api.app as app_module
 from backend.api.app import app
+
+# backend.api.app.ALLOWED_ORIGINS is a module-level list captured from
+# `settings.allowed_origins` at import time, and CORSMiddleware was already
+# constructed with that (possibly stale) list via app.add_middleware(...)
+# before this file even ran — refreshing `backend.config.settings` above
+# does not retroactively change it. If any other test module imported
+# backend.api.app first (e.g. one that sorts before this file
+# alphabetically and triggers a request, which caches Starlette's
+# middleware stack), the CORS origins here would be silently wrong
+# regardless of collection order. Force both the module-level list and the
+# already-added CORSMiddleware's origins to match this file's env vars, and
+# drop the cached middleware stack so Starlette rebuilds it on next request.
+app_module.ALLOWED_ORIGINS = backend.config.settings.allowed_origins
+for middleware in app.user_middleware:
+    if middleware.cls.__name__ == "CORSMiddleware":
+        middleware.kwargs["allow_origins"] = app_module.ALLOWED_ORIGINS
+app.middleware_stack = None
 
 client = TestClient(app, raise_server_exceptions=False)
 
@@ -179,8 +197,9 @@ def test_credentials_header_not_present():
     r = simple_get("/health", "http://localhost:5173")
     aca = r.headers.get("access-control-allow-credentials", "false")
     assert aca.lower() != "true", (
-        "access-control-allow-credentials must not be 'true' "
-        "(no auth is used; wildcard-compatible mode required)."
+        "access-control-allow-credentials must not be 'true' — auth uses a "
+        "bearer token in the Authorization header, not cookies, so "
+        "credentials mode is unnecessary."
     )
 
 

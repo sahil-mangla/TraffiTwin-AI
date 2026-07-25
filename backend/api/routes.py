@@ -9,6 +9,7 @@ from backend.api.schemas import (
 )
 from backend.services.twin_service import TwinService
 from backend.core.exceptions import ServiceUnavailableError, InvalidSimulationStepError
+from backend.auth.dependencies import get_current_user
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
@@ -108,7 +109,8 @@ async def get_system_state(
 async def simulate_failure(
     req: SimulateFailureRequest,
     twin: TwinService = Depends(get_twin_service),
-    incident: Any = Depends(get_incident_service)
+    incident: Any = Depends(get_incident_service),
+    user: Any = Depends(get_current_user),
 ):
     """
     Inject a sensor outage for `duration` simulation steps. Clears any stale
@@ -130,7 +132,8 @@ async def simulate_failure(
 async def step_simulation(
     req: StepRequest,
     twin: TwinService = Depends(get_twin_service),
-    incident: Any = Depends(get_incident_service)
+    incident: Any = Depends(get_incident_service),
+    user: Any = Depends(get_current_user),
 ):
     """Advance the simulation by `steps` ticks, running reconstruction for
     any sensors currently failed and healing any whose failure duration has
@@ -184,7 +187,8 @@ async def get_incident_history(
 @router.post("/generate-incident-summary", response_model=GenerateSummaryResponse)
 async def generate_incident_summary(
     req: GenerateSummaryRequest,
-    incident: Any = Depends(get_incident_service)
+    incident: Any = Depends(get_incident_service),
+    user: Any = Depends(get_current_user),
 ):
     """
     Generate a summary from a caller-supplied incident payload rather than
@@ -199,7 +203,8 @@ async def generate_incident_summary(
 @router.post("/analyze-current-state", response_model=GenerateSummaryResponse)
 async def analyze_current_state(
     twin: TwinService = Depends(get_twin_service),
-    incident: Any = Depends(get_incident_service)
+    incident: Any = Depends(get_incident_service),
+    user: Any = Depends(get_current_user),
 ):
     snapshot = twin.get_snapshot()
     # Find any active failures to determine if we should report a failure or nominal check

@@ -10,12 +10,15 @@ from fastapi.testclient import TestClient
 
 from backend.api.app import app
 from backend.api.routes import get_twin_service
+from backend.auth.dependencies import get_current_user
 
 
 @pytest.fixture
 def client():
+    app.dependency_overrides[get_current_user] = lambda: {"sub": "test-user", "email": "test@example.com"}
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_unknown_route_returns_normalized_404(client):

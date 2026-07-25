@@ -7,6 +7,12 @@ def client():
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
 
+
+@pytest.fixture(scope="module")
+def auth_headers(client):
+    token = client.post("/auth/dev-login").json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
 def test_health_route(client):
     r = client.get("/health")
     assert r.status_code == 200
@@ -50,35 +56,35 @@ def test_metrics_route(client):
     assert "rmse" in data
 
 
-def test_simulate_failure_success(client):
+def test_simulate_failure_success(client, auth_headers):
     # Valid sensor ID and duration
-    r = client.post("/simulate_failure", json={"sensor_id": 10, "duration": 5})
+    r = client.post("/simulate_failure", json={"sensor_id": 10, "duration": 5}, headers=auth_headers)
     assert r.status_code == 200
     assert r.json()["status"] == "success"
 
 
-def test_simulate_failure_invalid_sensor(client):
+def test_simulate_failure_invalid_sensor(client, auth_headers):
     # Invalid sensor ID
-    r = client.post("/simulate_failure", json={"sensor_id": 9999, "duration": 5})
+    r = client.post("/simulate_failure", json={"sensor_id": 9999, "duration": 5}, headers=auth_headers)
     assert r.status_code == 404
     assert r.json()["error_code"] == "SensorNotFoundError"
 
 
-def test_simulate_failure_invalid_duration(client):
+def test_simulate_failure_invalid_duration(client, auth_headers):
     # Invalid duration <= 0
-    r = client.post("/simulate_failure", json={"sensor_id": 10, "duration": 0})
+    r = client.post("/simulate_failure", json={"sensor_id": 10, "duration": 0}, headers=auth_headers)
     assert r.status_code == 422
     assert r.json()["error_code"] == "InvalidSimulationStepError"
 
 
-def test_step_simulation_success(client):
-    r = client.post("/step", json={"steps": 2})
+def test_step_simulation_success(client, auth_headers):
+    r = client.post("/step", json={"steps": 2}, headers=auth_headers)
     assert r.status_code == 200
     assert "current_time" in r.json()
 
 
-def test_step_simulation_invalid_steps(client):
-    r = client.post("/step", json={"steps": 0})
+def test_step_simulation_invalid_steps(client, auth_headers):
+    r = client.post("/step", json={"steps": 0}, headers=auth_headers)
     assert r.status_code == 422
     assert r.json()["error_code"] == "InvalidSimulationStepError"
 
@@ -91,8 +97,8 @@ def test_incident_history_route_empty_for_unused_sensor(client):
     assert r.json() == []
 
 
-def test_incident_history_route_after_incident(client):
-    r = client.post("/simulate_failure", json={"sensor_id": 15, "duration": 5})
+def test_incident_history_route_after_incident(client, auth_headers):
+    r = client.post("/simulate_failure", json={"sensor_id": 15, "duration": 5}, headers=auth_headers)
     assert r.status_code == 200
 
     # /analyze-current-state reports on the *first* currently-failed sensor
@@ -104,7 +110,7 @@ def test_incident_history_route_after_incident(client):
     }
     assert failed_sensor_ids  # sensor 15 was just injected, so at least one
 
-    r = client.post("/analyze-current-state")
+    r = client.post("/analyze-current-state", headers=auth_headers)
     assert r.status_code == 200
 
     r = client.get("/incidents/history", params={"event_type": "sensor_failure"})

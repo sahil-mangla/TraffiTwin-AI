@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from backend.api.app import app
 from backend.api.routes import get_incident_service
+from backend.auth.dependencies import get_current_user
 
 
 class FakeIncidentService:
@@ -51,9 +52,11 @@ def client():
     # FakeIncidentService() each time would silently lose state (e.g. a
     # summary set by one request would never be visible to the next).
     app.dependency_overrides[get_incident_service] = lambda: fake_incident_service
+    app.dependency_overrides[get_current_user] = lambda: {"sub": "test-user", "email": "test@example.com"}
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
     app.dependency_overrides.pop(get_incident_service, None)
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_full_failure_and_recovery_flow_updates_state(client):
