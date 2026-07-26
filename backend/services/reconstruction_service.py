@@ -4,6 +4,7 @@ import pandas as pd
 import joblib
 from backend.models.feature_engineering import SpatialFeatureEngineer
 from backend.models.lightgbm_reconstructor import LightGBMReconstructor
+from backend.models.reconstructor import Reconstructor
 from backend.twin.twin_state import TwinState
 from backend.config import settings
 from typing import Dict, List, Optional
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 class ReconstructionService:
     def __init__(self, model_path: Optional[str] = None):
         self.model_path = model_path or settings.model_path
-        self.model = None
+        self.model: Optional[Reconstructor] = None
         self.engineer = SpatialFeatureEngineer(max_neighbors=3)
         self.engineer._fitted = True  # Avoid warnings since we only transform
 

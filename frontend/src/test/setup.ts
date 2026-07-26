@@ -5,6 +5,21 @@ import { useAuthStore } from '../store/authStore';
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
+});
+
+// jsdom doesn't implement ResizeObserver (used by NetworkGraph to size its
+// canvas). A no-op stub is enough for components that merely need it to
+// exist; tests that care about resize behavior replace it with their own
+// vi.stubGlobal('ResizeObserver', ...) mock. Re-applied every test since
+// afterEach clears all stubbed globals.
+class NoopResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+beforeEach(() => {
+  vi.stubGlobal('ResizeObserver', NoopResizeObserver);
 });
 
 // Most component tests exercise the "happy path" of controls that are now
@@ -48,5 +63,22 @@ vi.mock('motion/react', async () => {
   return {
     motion,
     AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
+  };
+});
+
+// @react-oauth/google renders a real Google Identity Services iframe/script
+// that jsdom can't load. Replace GoogleLogin with a plain button so tests
+// can drive the sign-in flow via its onSuccess callback without a live
+// GoogleOAuthProvider or network access.
+vi.mock('@react-oauth/google', async () => {
+  const React = await import('react');
+  return {
+    GoogleOAuthProvider: ({ children }: { children?: React.ReactNode }) => children,
+    GoogleLogin: ({ onSuccess }: { onSuccess: (response: { credential: string }) => void }) =>
+      React.createElement(
+        'button',
+        { type: 'button', 'aria-label': 'Sign in with Google', onClick: () => onSuccess({ credential: 'fake-credential' }) },
+        'Sign in with Google'
+      ),
   };
 });

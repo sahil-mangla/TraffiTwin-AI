@@ -132,7 +132,7 @@ jobs:
     - name: Run Frontend tests
       run: |
         cd frontend
-        npm run test
+        npm run test:coverage
 
     - name: Install Playwright browsers
       run: |

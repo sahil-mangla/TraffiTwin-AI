@@ -1,9 +1,10 @@
-import os
 from dotenv import load_dotenv
 
 load_dotenv() # Load variables from .env file
 
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+from backend._omp_compat import apply_openmp_compat_workaround
+
+apply_openmp_compat_workaround()
 
 import logging
 from contextlib import asynccontextmanager

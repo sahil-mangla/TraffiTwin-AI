@@ -15,11 +15,12 @@ import numpy as np
 import pandas as pd
 
 from backend.models.evaluator import Evaluator
+from backend.models.reconstructor import Reconstructor
 
 logger = logging.getLogger(__name__)
 
 
-class LightGBMReconstructor:
+class LightGBMReconstructor(Reconstructor):
     """
     LightGBM model for predicting missing traffic speed data.
     """

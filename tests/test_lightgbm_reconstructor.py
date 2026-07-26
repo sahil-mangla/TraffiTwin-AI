@@ -3,6 +3,11 @@ import pandas as pd
 import pytest
 
 from backend.models.lightgbm_reconstructor import LightGBMReconstructor
+from backend.models.reconstructor import Reconstructor
+
+
+def test_lightgbm_reconstructor_implements_reconstructor_interface():
+    assert issubclass(LightGBMReconstructor, Reconstructor)
 
 
 def _make_training_data(n=200, n_features=4, seed=0):

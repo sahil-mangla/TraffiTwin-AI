@@ -1,6 +1,6 @@
-import os
+from backend._omp_compat import apply_openmp_compat_workaround
 
-os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+apply_openmp_compat_workaround()
 
 import numpy as np
 import pytest

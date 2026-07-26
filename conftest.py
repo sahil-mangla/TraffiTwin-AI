@@ -1,16 +1,16 @@
 # Pytest configuration file to enable importing backend modules
-import os
 
-# Must be set before any OpenMP-linked library (numpy, scipy, lightgbm) is
-# first imported by any test module — OpenMP reads this at library load time,
-# not at call time. backend/api/app.py sets the same var, but that only takes
-# effect if app.py happens to be the first module in the whole test run to
-# touch an OpenMP-linked library, which pytest's collection order does not
-# guarantee. Setting it here, in the file pytest always imports before
-# collecting any test module, fixes segfaults when unpickling the LightGBM
-# checkpoint (lightgbm/basic.py __setstate__) caused by two OpenMP runtimes
-# (numpy's and lightgbm's bundled libomp) initializing in the same process.
-os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+# Must be applied before any OpenMP-linked library (numpy, scipy, lightgbm)
+# is first imported by any test module — OpenMP reads this at library load
+# time, not at call time. backend/api/app.py applies the same workaround,
+# but that only takes effect if app.py happens to be the first module in the
+# whole test run to touch an OpenMP-linked library, which pytest's
+# collection order does not guarantee. Applying it here, in the file pytest
+# always imports before collecting any test module, fixes segfaults when
+# unpickling the LightGBM checkpoint. See backend/_omp_compat.py for details.
+from backend._omp_compat import apply_openmp_compat_workaround
+
+apply_openmp_compat_workaround()
 
 # No DATABASE_URL default needed here: backend.config.Settings already
 # defaults to postgres:postgres@localhost:5432/traffitwin, which matches the
