@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from backend.config import Settings
+from backend.config import _DEFAULT_DATABASE_URL, Settings
 
 
 def test_defaults_to_development_and_allows_localhost():
@@ -94,6 +94,11 @@ def test_production_rejects_default_database_url(tmp_path):
             ALLOWED_ORIGINS="https://traffitwin-ai.web.app",
             JWT_SECRET_KEY="a-real-production-secret",
             GOOGLE_OAUTH_CLIENT_ID="client-id.apps.googleusercontent.com",
+            # Pinned explicitly rather than left to the field default: CI sets
+            # DATABASE_URL as a job-level env var (see ci.yml) that would
+            # otherwise leak in here ahead of the field default, since
+            # _env_file=None only disables .env loading, not os.environ.
+            DATABASE_URL=_DEFAULT_DATABASE_URL,
         )
 
 
