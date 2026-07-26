@@ -93,6 +93,7 @@ def test_production_rejects_default_database_url(tmp_path):
             MODEL_PATH=str(model_path),
             ALLOWED_ORIGINS="https://traffitwin-ai.web.app",
             JWT_SECRET_KEY="a-real-production-secret",
+            GOOGLE_OAUTH_CLIENT_ID="client-id.apps.googleusercontent.com",
         )
 
 
