@@ -22,7 +22,14 @@ if config.config_file_name is not None:
 # Single source of truth for the DB URL is backend.config.settings, not
 # alembic.ini — this keeps local/CI/production all resolving DATABASE_URL
 # the same way the app itself does.
-config.set_main_option("sqlalchemy.url", settings.database_url.get_secret_value())
+# `%` must be doubled: alembic's Config is backed by ConfigParser's
+# BasicInterpolation, which treats a bare `%` (e.g. from a URL-encoded
+# password like `%23`) as a broken interpolation directive rather than a
+# literal character. ConfigParser un-escapes `%%` back to `%` on read, so
+# this round-trips correctly through get_main_option()/get_section() below.
+config.set_main_option(
+    "sqlalchemy.url", settings.database_url.get_secret_value().replace("%", "%%")
+)
 
 target_metadata = Base.metadata
 
