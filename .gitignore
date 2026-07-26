@@ -22,7 +22,6 @@ node_modules/
 dist/
 *.log
 .codebase-memory/
-DEPLOYMENT_GUIDE.md
 
 # Pytest, coverage, and local temp files
 .pytest_cache/
