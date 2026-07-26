@@ -67,8 +67,13 @@ jobs:
         mypy backend --ignore-missing-imports
 
     - name: Scan Python dependencies for known vulnerabilities
+      # PYSEC-2026-1325 (ecdsa, transitive via python-jose) is a P-256
+      # timing side-channel in ecdsa.SigningKey.sign_digest(); upstream
+      # considers side-channel attacks out of scope and has no planned fix.
+      # We only use python-jose for HS256 (HMAC) signing (backend/auth/jwt_utils.py),
+      # so the affected ECDSA code path is never exercised — safe to ignore.
       run: |
-        pip-audit -r requirements.txt
+        pip-audit -r requirements.txt --ignore-vuln PYSEC-2026-1325
 
     - name: Apply database migrations
       # Runs the actual migration file against the ephemeral CI Postgres —
