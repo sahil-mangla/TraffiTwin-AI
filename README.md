@@ -82,11 +82,13 @@ TraffiTwin AI bridges this gap, serving as an algorithmic backup layer that esti
 | :--- | :--- |
 | **Frontend** | React 19, Vite, Zustand, Tailwind CSS, React Force Graph 2D, Framer Motion |
 | **Backend** | Python 3.10, FastAPI, Uvicorn, CORS Middleware, Dotenv |
+| **Auth** | Google Sign-In (OAuth), JWT session tokens (`python-jose`) |
+| **Persistence** | PostgreSQL, SQLAlchemy (async) + `asyncpg`, Alembic migrations |
 | **Machine Learning** | LightGBM, NumPy, SciPy (METR-LA adjacency matrix propagation) |
 | **AI Agent** | Google Agent Development Kit (ADK) |
 | **LLM** | Google Gemini 2.5 Flash |
 | **Dataset** | METR-LA loop detector telemetry (207 sensors, 34,272 timesteps) |
-| **Deployment** | Firebase Hosting (Frontend), Hugging Face Spaces (Backend Docker container) |
+| **Deployment** | Firebase Hosting (Frontend), Hugging Face Spaces (Backend Docker container), managed Postgres |
 
 ---
 
@@ -121,6 +123,8 @@ graph TD
 | **Embedded ADK Analyst** | Features a smart city operations assistant capable of answering complex telemetry queries over live digital twin states. |
 | **Benchmarking Framework** | Compares reconstruction performance against standard baselines (Historical Mean, Spatial K-Nearest Neighbors). |
 | **Interactive Event Logs** | Displays a scrollable operations timeline tracking sensor failures, AI response engagements, and physical recoveries. |
+| **Google Sign-In Access Gate** | Requires a signed-in operator (Google OAuth, JWT-backed session) before simulation controls or AI analysis actions can be used. |
+| **Persistent Incident History** | Detected incidents are durably stored in Postgres and queryable via `GET /incidents/history` (sensor/event/time filters), with old records pruned automatically after a configurable retention window. |
 
 ---
 
@@ -216,12 +220,15 @@ TraffiTwin-AI/
 │       └── README.md                # Agent documentation
 ├── backend/
 │   ├── api/                         # FastAPI router, app config, and exception handlers
+│   ├── auth/                        # Google OAuth verification, JWT issuance/dependencies
+│   ├── persistence/                 # SQLAlchemy models, async DB engine, incident repository
 │   ├── services/                    # Core backend service singletons
 │   ├── twin/                        # Simulation state and stream simulator
 │   ├── models/                      # Feature engineering, LightGBM reconstructor, evaluator
 │   └── data/                        # METR-LA loader, preprocessing, failure simulator
+├── migrations/                      # Alembic migration environment + revisions
 ├── tests/                           # Backend pytest suite (unit, API, integration)
-├── scripts/                         # Standalone scripts (e.g. validate_pipeline.py)
+├── scripts/                         # Standalone scripts (e.g. validate_pipeline.py, prune_incidents.py)
 ├── frontend/
 │   ├── src/
 │   │   ├── components/              # React UI elements (Header, OperationsRail, BriefingModal)
@@ -264,9 +271,17 @@ cd TraffiTwin-AI
    ```bash
    pip install -r requirements.txt -r requirements-dev.txt
    ```
-3. Set environment variables in a `.env` file at the **repository root** (loaded via `load_dotenv()` in `backend/api/app.py`, relative to wherever `uvicorn` is launched from):
+3. Set environment variables in a `.env` file at the **repository root** (loaded via `load_dotenv()` in `backend/api/app.py`, relative to wherever `uvicorn` is launched from — see `.env.example` for the full list):
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
+   DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/traffitwin
+   JWT_SECRET_KEY=dev-insecure-jwt-secret-change-me
+   GOOGLE_OAUTH_CLIENT_ID=
+   ```
+4. Start a local Postgres and apply migrations (see [CONTRIBUTING.md](CONTRIBUTING.md) for details):
+   ```bash
+   docker compose up -d postgres
+   alembic upgrade head
    ```
 
 ### Frontend Setup
@@ -278,6 +293,8 @@ cd TraffiTwin-AI
    ```bash
    npm install
    ```
+
+Simulation controls and AI analysis actions require a signed-in session. For local development, skip real Google OAuth setup and get a token from the dev-only login route instead — see the **Auth (local development)** section of [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
