@@ -26,7 +26,23 @@ beforeEach(() => {
 });
 
 describe('useSystemState', () => {
-  it('fetches state on mount and stores it via setSystemState', async () => {
+  it('does NOT fetch state while wakeUpStatus is waking (backend not yet confirmed)', async () => {
+    // Initial store state has wakeUpStatus='waking' — polling must be suppressed.
+    vi.mocked(api.getState).mockResolvedValue(makeState());
+
+    const { unmount } = renderHook(() => useSystemState());
+
+    // Give any async microtasks time to run.
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(api.getState).not.toHaveBeenCalled();
+    expect(useTwinStore.getState().snapshot).toBeNull();
+    unmount();
+  });
+
+  it('fetches state on mount once wakeUpStatus transitions to ready', async () => {
+    // Simulate the wake-up hook completing before the system-state hook renders.
+    useTwinStore.setState({ wakeUpStatus: 'ready' });
     vi.mocked(api.getState).mockResolvedValue(makeState());
 
     const { unmount } = renderHook(() => useSystemState());
@@ -38,6 +54,7 @@ describe('useSystemState', () => {
   });
 
   it('marks the backend offline when the fetch fails', async () => {
+    useTwinStore.setState({ wakeUpStatus: 'ready' });
     vi.mocked(api.getState).mockRejectedValue(new Error('network error'));
 
     const { unmount } = renderHook(() => useSystemState());
@@ -47,6 +64,7 @@ describe('useSystemState', () => {
   });
 
   it('returns a refetch function that re-invokes the API', async () => {
+    useTwinStore.setState({ wakeUpStatus: 'ready' });
     vi.mocked(api.getState).mockResolvedValue(makeState());
     const { result, unmount } = renderHook(() => useSystemState());
 
@@ -57,3 +75,4 @@ describe('useSystemState', () => {
     unmount();
   });
 });
+

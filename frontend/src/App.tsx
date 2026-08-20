@@ -10,6 +10,7 @@ import { StorytellingBanner } from './components/StorytellingBanner';
 import { BackendOfflineOverlay } from './components/BackendOfflineOverlay';
 import { useSystemState } from './hooks/useSystemState';
 import { useAutoPlay } from './hooks/useAutoPlay';
+import { useWakeUpBackend } from './hooks/useWakeUpBackend';
 import { api } from './api/trafitwin';
 import type { GraphLayoutNode, GraphEdge } from './types/api';
 import { BriefingModal } from './components/BriefingModal';
@@ -24,6 +25,8 @@ const panelVariants = {
 };
 
 function App() {
+  // Wake the HF Space before anything else starts polling.
+  useWakeUpBackend();
   const { refetch } = useSystemState();
   useAutoPlay(refetch);
 

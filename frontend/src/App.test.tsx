@@ -6,6 +6,7 @@ import { api } from './api/trafitwin';
 
 vi.mock('./api/trafitwin', () => ({
   api: {
+    getHealth: vi.fn(),
     getState: vi.fn(),
     getGraph: vi.fn(),
     stepSimulation: vi.fn(),
@@ -16,8 +17,10 @@ vi.mock('./api/trafitwin', () => ({
 const LAYOUT_JSON = [{ id: 0, x: 0.5, y: 0.5 }];
 
 beforeEach(() => {
-  useTwinStore.setState(useTwinStore.getInitialState(), true);
+  // Start in ready state so the wake-up overlay doesn't block the test UI.
+  useTwinStore.setState({ ...useTwinStore.getInitialState(), wakeUpStatus: 'ready' }, true);
   vi.clearAllMocks();
+  vi.mocked(api.getHealth).mockResolvedValue({ status: 'ok', version: '1.0.0' });
   vi.mocked(api.getState).mockResolvedValue({
     snapshot: { current_time: 0, readings: {}, masks: {}, reconstructions: {} },
     metrics: { fcr: 100, mae: 0, rmse: 0, total_failures_simulated: 0 },

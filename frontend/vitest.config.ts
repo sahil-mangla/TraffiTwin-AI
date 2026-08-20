@@ -6,6 +6,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
     environment: 'jsdom',
+    // Node 25 + Vitest 4 worker-threads pool incorrectly passes
+    // --localstorage-file to jsdom child processes, breaking localStorage.
+    // 'forks' uses child_process.fork() instead and avoids this.
+    pool: 'forks',
     setupFiles: ['./src/test/setup.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
     coverage: {

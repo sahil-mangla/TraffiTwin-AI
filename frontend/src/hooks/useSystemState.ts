@@ -8,6 +8,7 @@ export function useSystemState() {
   const setSystemState = useTwinStore((s) => s.setSystemState);
   const setBackendStatus = useTwinStore((s) => s.setBackendStatus);
   const addEvent = useTwinStore((s) => s.addEvent);
+  const wakeUpStatus = useTwinStore((s) => s.wakeUpStatus);
   const snapshot = useTwinStore((s) => s.snapshot);
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
@@ -23,8 +24,11 @@ export function useSystemState() {
     }
   }
 
-  // Initial load + idle polling
+  // Only start polling once the wake-up hook confirms the backend is reachable.
+  // This prevents redundant failed requests hammering a cold HF Space.
   useEffect(() => {
+    if (wakeUpStatus !== 'ready') return;
+
     fetchState();
 
     function schedule() {
@@ -41,8 +45,9 @@ export function useSystemState() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
+    // Re-run only when wakeUpStatus transitions to 'ready'.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [wakeUpStatus]);
 
   return { refetch: fetchState };
 }

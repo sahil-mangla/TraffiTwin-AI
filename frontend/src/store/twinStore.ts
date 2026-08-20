@@ -29,6 +29,11 @@ interface TwinStore {
   isAutoplay: boolean;
   isLoading: boolean;
   isBackendOffline: boolean;
+  /** 'waking'  = health-check pings in flight (HF Space cold-start)
+   *  'ready'   = backend confirmed reachable
+   *  'failed'  = all retries exhausted, backend unreachable              */
+  wakeUpStatus: 'waking' | 'ready' | 'failed';
+  wakeUpRetries: number;
   lastUpdated: Date | null;
   selectedSensorId: number | null;
 
@@ -50,6 +55,7 @@ interface TwinStore {
   addEvent: (event: Omit<TwinEvent, 'id' | 'timestamp'>) => void;
   clearEvents: () => void;
   setBackendStatus: (offline: boolean) => void;
+  setWakeUpStatus: (status: 'waking' | 'ready' | 'failed', retries?: number) => void;
   toggleAutoplay: () => void;
   setLoading: (v: boolean) => void;
   setSelectedSensor: (id: number | null) => void;
@@ -88,6 +94,8 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
   isAutoplay: false,
   isLoading: true,
   isBackendOffline: false,
+  wakeUpStatus: 'waking' as const,
+  wakeUpRetries: 0,
   lastUpdated: null,
   selectedSensorId: null,
   activeBanner: null,
@@ -182,6 +190,15 @@ export const useTwinStore = create<TwinStore>((set, get) => ({
 
   setBackendStatus(offline) {
     set({ isBackendOffline: offline });
+  },
+
+  setWakeUpStatus(status, retries) {
+    set((s) => ({
+      wakeUpStatus: status,
+      wakeUpRetries: retries ?? s.wakeUpRetries,
+      // When ready, also clear the offline flag
+      isBackendOffline: status === 'ready' ? false : s.isBackendOffline,
+    }));
   },
 
   toggleAutoplay() {

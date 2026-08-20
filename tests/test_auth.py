@@ -102,3 +102,28 @@ def test_mutating_route_accepts_valid_dev_token(client):
 def test_read_only_route_does_not_require_auth(client):
     r = client.get("/state")
     assert r.status_code == 200
+
+
+def test_health_does_not_require_auth(client):
+    """Regression guard: /health must stay unauthenticated so the wake-up
+    probe in useWakeUpBackend can ping it before a user has logged in."""
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"
+
+
+def test_auth_google_route_is_registered(client):
+    """Regression guard: /auth/google must exist in the running app.
+    This test catches the production regression where the auth router was
+    not included and the endpoint returned 404."""
+    # We don't provide a real token — we just want a 401/422, not a 404.
+    with patch(
+        "backend.auth.routes.google_id_token.verify_oauth2_token",
+        side_effect=ValueError("Token used too late"),
+    ):
+        r = client.post("/auth/google", json={"id_token": "not-a-real-token"})
+    # 401 means the route exists and rejected the bad token — not 404.
+    assert r.status_code == 401, (
+        f"Expected 401 from /auth/google but got {r.status_code}. "
+        "The auth router may not be registered in app.py."
+    )
